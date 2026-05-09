@@ -28,8 +28,9 @@ import org.apache.commons.codec.digest.DigestUtils;
  */
 public class App {
 
-    Scanner scan = new Scanner(System.in);
+    private Scanner scan = new Scanner(System.in);
     private List<Path> parts = new ArrayList<>();
+    private List<Thread> threads = new ArrayList<>();
     private final String SUFIX = "_PART_";
     private App app;
     private boolean finalDownload = false;
@@ -82,13 +83,11 @@ public class App {
             Long start = 0L;
             int count = 0;
 
-            List<Thread> threads = new ArrayList<>();
-
             while (start < this.length) {
 
                 long finalStart = start;
 
-                Long finalEnd = (start + chunkSize) > this.length ? this.length : start + chunkSize;
+                Long finalEnd = (start + chunkSize) > this.length ? this.length : start + chunkSize - 1;
 
                 int finalCount = count;
 
@@ -107,7 +106,7 @@ public class App {
 
             System.out.println("Descargando..");
 
-            Thread thread = new Thread(() -> {
+            new Thread(() -> {
                 while (!app.finalDownload) {
                     app.downloaded = 1L;
                     parts.forEach(p -> {
@@ -123,8 +122,7 @@ public class App {
                 }
                 System.out.println();
 
-            });
-            thread.start();
+            }).start();
 
             for (Thread t : threads) {
                 t.join();
@@ -132,10 +130,15 @@ public class App {
 
             this.finalDownload = true;
 
+            this.parts.stream().forEach(System.out::println);
+            System.err.println();
+
             this.parts = this.parts.stream()
                     .sorted((p1, p2) -> Integer.compare(Integer.parseInt(p1.getFileName().toString().split(SUFIX)[1]),
                             Integer.parseInt(p2.getFileName().toString().split(SUFIX)[1])))
                     .toList();
+
+            this.parts.stream().forEach(System.out::println);
 
             try (OutputStream out = Files.newOutputStream(Path.of(fileName))) {
 
@@ -222,6 +225,8 @@ public class App {
     public void downPartFile(HttpClient client, String fileName, Long start, Long end, URI uri, int count, App app) {
 
         File partFile = new File(fileName + SUFIX + count);
+
+        // System.out.println("count: " + partFile.exists());
 
         app.getParts().add(partFile.toPath());
 
