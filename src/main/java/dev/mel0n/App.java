@@ -15,6 +15,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -40,50 +41,6 @@ public class App {
 
         Long endAppTime = System.currentTimeMillis();
         System.out.println("TIEMPO TRASCURRIDO EN LA DESCARGA: " + (endAppTime - startAppTime) / 1000);
-    }
-
-    public URI getDownloadLink() throws URISyntaxException {
-
-        Scanner scan = new Scanner(System.in);
-        URI uri = null;
-        String link = "";
-        while (true) {
-
-            System.out.println("Por favor, indica el link para descargar:");
-
-            link = scan.nextLine();
-
-            System.out.println();
-
-            uri = new URI(link);
-
-            if (uri.getScheme() == null) {
-                System.out.println("NO ES URL VÁLIDA, DEBES INDICAR HTTP/HTTPS\n");
-            } else {
-                break;
-            }
-
-        }
-        return uri;
-    }
-
-    public int getDownloadThreadSize() throws URISyntaxException {
-
-        Scanner scan = new Scanner(System.in);
-        int size = 0;
-
-        while (true) {
-            if (scan.hasNextInt()) {
-                System.out.println("Por favor, indica la cantidad de hilos para la descarga simultánea:");
-                size = scan.nextInt();
-                System.out.println();
-                break;
-            } else {
-                System.out.println("Debes indicar un número entero");
-                scan.next();
-            }
-        }
-        return size;
     }
 
     public void start() {
@@ -167,12 +124,12 @@ public class App {
                 Files.delete(part);
             }
 
-            File file = new File(fileName);
+            Path file = Path.of(fileName);
 
-            if (file.exists()) {
+            if (Files.exists(file)) {
                 System.out.println("############################## DESCARGADO ##############################");
                 System.out.println("TAMAÑO EN WEB: " + length);
-                System.out.println("TAMAÑO EN DISCO: " + file.length());
+                System.out.println("TAMAÑO EN DISCO: " + Files.size(file));
                 System.out.println("########################################################################");
             }
 
@@ -185,8 +142,58 @@ public class App {
         }
     }
 
+    public URI getDownloadLink() throws URISyntaxException {
+
+        Scanner scan = new Scanner(System.in);
+        URI uri = null;
+        String link = "";
+        while (true) {
+
+            System.out.println("Por favor, indica el link para descargar:");
+
+            link = scan.nextLine();
+
+            System.out.println();
+
+            uri = new URI(link);
+
+            if (uri.getScheme() == null) {
+                System.out.println("NO ES URL VÁLIDA, DEBES INDICAR HTTP/HTTPS\n");
+            } else {
+                break;
+            }
+
+        }
+        return uri;
+    }
+
+    public int getDownloadThreadSize() throws URISyntaxException {
+
+        Scanner scan = new Scanner(System.in);
+        int size = 0;
+
+        while (true) {
+            System.out.println("Por favor, indica la cantidad de hilos para la descarga simultánea:");
+            if (scan.hasNextInt()) {
+                size = scan.nextInt();
+                System.out.println();
+                break;
+            } else {
+                System.out.println("Debes indicar un número entero");
+                scan.next();
+            }
+        }
+        return size;
+    }
+
     public void downPartFile(HttpClient client, String fileName, Long start, Long end, URI uri, int count, App app) {
 
+        File partFile = new File(fileName + SUFIX + count);
+
+        if (partFile.exists()) {
+            start = start + partFile.length();
+        }
+        System.out.println(partFile.getName() + " - Range bytes=" + start + "-" + end);
         HttpRequest requestFile = HttpRequest.newBuilder()
                 .uri(uri)
                 .header("Range", "bytes=" + start + "-" + end)
@@ -198,16 +205,28 @@ public class App {
             responseFile = client.send(requestFile,
                     HttpResponse.BodyHandlers.ofInputStream());
 
-            Path partFile = Path.of(fileName + SUFIX + count);
+            app.getParts().add(partFile.toPath());
 
-            app.getParts().add(partFile);
+            if (partFile.exists()) {
+                Path tmpFile = Path.of(partFile.getName() + "_tmp");
+                try (InputStream in = responseFile.body();
+                        OutputStream out = Files.newOutputStream(partFile.toPath(),
+                                StandardOpenOption.APPEND)) {
 
-            try (InputStream in = responseFile.body();
-                    OutputStream out = Files.newOutputStream(partFile)) {
+                    in.transferTo(out);
+                }
 
-                in.transferTo(out);
+            } else {
+                try (InputStream in = responseFile.body();
+                        OutputStream out = Files.newOutputStream(partFile.toPath())) {
+
+                    in.transferTo(out);
+                }
             }
-        } catch (IOException e) {
+
+        } catch (
+
+        IOException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
             e.printStackTrace();
