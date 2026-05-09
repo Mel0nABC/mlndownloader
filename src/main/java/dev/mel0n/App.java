@@ -44,13 +44,14 @@ public class App {
 
     public URI getDownloadLink() throws URISyntaxException {
 
+        Scanner scan = new Scanner(System.in);
         URI uri = null;
         String link = "";
         while (true) {
 
             System.out.println("Por favor, indica el link para descargar:");
 
-            link = new Scanner(System.in).nextLine();
+            link = scan.nextLine();
 
             System.out.println();
 
@@ -66,13 +67,29 @@ public class App {
         return uri;
     }
 
+    public int getDownloadThreadSize() throws URISyntaxException {
+
+        Scanner scan = new Scanner(System.in);
+        int size = 0;
+
+        while (true) {
+            if (scan.hasNextInt()) {
+                System.out.println("Por favor, indica la cantidad de hilos para la descarga simultánea:");
+                size = scan.nextInt();
+                System.out.println();
+                break;
+            } else {
+                System.out.println("Debes indicar un número entero");
+                scan.next();
+            }
+        }
+        return size;
+    }
+
     public void start() {
         try {
 
             URI uri = app.getDownloadLink();
-
-            // String link =
-            // "https://es.mirrors.cicku.me/archlinux/iso/2026.05.01/archlinux-2026.05.01-x86_64.iso";
 
             HttpClient client = HttpClient.newHttpClient();
 
@@ -87,13 +104,13 @@ public class App {
             String fileName = path.substring(path.lastIndexOf("/") + 1);
 
             Long length = Long.parseLong(response.headers().map().get("content-length").getFirst());
-            Long chuckSize = length / 20;
+            Long chunkSize = length / getDownloadThreadSize();
 
             System.out.println("############################## INFORMACIÓN DEL ARCHIVO ##############################");
             System.out.println();
             System.out.println("FILE SIZE: " + length);
-            System.out.println("MULTI PART SIZE: " + chuckSize);
-            System.out.println("TOTAL PARTS: " + length / chuckSize);
+            System.out.println("MULTI PART SIZE: " + chunkSize);
+            System.out.println("TOTAL PARTS: " + length / chunkSize);
             System.out.println();
             System.out.println("Status code: " + response.statusCode());
             System.out.println("Accept Ranges: " + response.headers().map().get("accept-ranges").getFirst());
@@ -110,7 +127,7 @@ public class App {
 
                 long finalStart = start;
 
-                Long finalEnd = (start + chuckSize) > length ? length : start + chuckSize;
+                Long finalEnd = (start + chunkSize) > length ? length : start + chunkSize;
 
                 int finalCount = count;
 
