@@ -1,4 +1,4 @@
-# Multi Thread Downloader (Java)
+# MlnDownloader - Multi Thread Downloader (Java)
 
 Proyecto educativo en Java para aprender cómo implementar un **gestor de descargas multihilo**, utilizando HTTP Range, procesamiento concurrente y verificación de integridad de archivos.
 
