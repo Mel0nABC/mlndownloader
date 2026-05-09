@@ -28,9 +28,13 @@ import org.apache.commons.codec.digest.DigestUtils;
  */
 public class App {
 
+    Scanner scan = new Scanner(System.in);
     private List<Path> parts = new ArrayList<>();
     private final String SUFIX = "_PART_";
     private App app;
+    private boolean finalDownload = false;
+    private Long downloaded = 0L;
+    private Long length = 0L;
 
     public static void main(String[] args) {
         Long startAppTime = System.currentTimeMillis();
@@ -60,18 +64,18 @@ public class App {
             String path = uri.getPath();
             String fileName = path.substring(path.lastIndexOf("/") + 1);
 
-            Long length = Long.parseLong(response.headers().map().get("content-length").getFirst());
+            this.length = Long.parseLong(response.headers().map().get("content-length").getFirst());
             Long chunkSize = length / getDownloadThreadSize();
 
             System.out.println("############################## INFORMACIÓN DEL ARCHIVO ##############################");
             System.out.println();
-            System.out.println("FILE SIZE: " + length);
+            System.out.println("FILE SIZE: " + this.length);
             System.out.println("MULTI PART SIZE: " + chunkSize);
-            System.out.println("TOTAL PARTS: " + length / chunkSize);
+            System.out.println("TOTAL PARTS: " + this.length / chunkSize);
             System.out.println();
             System.out.println("Status code: " + response.statusCode());
             System.out.println("Accept Ranges: " + response.headers().map().get("accept-ranges").getFirst());
-            System.out.println("Tamaño en bytes: " + length);
+            System.out.println("Tamaño en bytes: " + this.length);
             System.out.println();
             System.out.println("#####################################################################################");
 
@@ -80,11 +84,11 @@ public class App {
 
             List<Thread> threads = new ArrayList<>();
 
-            while (start < length) {
+            while (start < this.length) {
 
                 long finalStart = start;
 
-                Long finalEnd = (start + chunkSize) > length ? length : start + chunkSize;
+                Long finalEnd = (start + chunkSize) > this.length ? this.length : start + chunkSize;
 
                 int finalCount = count;
 
@@ -101,12 +105,32 @@ public class App {
 
             }
 
-            System.out.print("Descargando..");
+            System.out.println("Descargando..");
+
+            Thread thread = new Thread(() -> {
+                while (!app.finalDownload) {
+                    app.downloaded = 1L;
+                    parts.forEach(p -> {
+                        File file = new File(p.toUri());
+                        app.downloaded += file.length() / 1000000L;
+                    });
+                    Long totalMbytes = app.length / 1000000L;
+                    float percent = ((float) app.downloaded / (float) totalMbytes) * 100;
+                    int percentInt = (int) percent;
+
+                    System.out.print(
+                            "DOWNLOADED : " + percentInt + "%, " + app.downloaded + "/" + totalMbytes + " MByte\r");
+                }
+                System.out.println();
+
+            });
+            thread.start();
+
             for (Thread t : threads) {
-                System.out.print("..");
                 t.join();
             }
-            System.out.println(" Descarga finalizada");
+
+            this.finalDownload = true;
 
             this.parts = this.parts.stream()
                     .sorted((p1, p2) -> Integer.compare(Integer.parseInt(p1.getFileName().toString().split(SUFIX)[1]),
@@ -115,10 +139,15 @@ public class App {
 
             try (OutputStream out = Files.newOutputStream(Path.of(fileName))) {
 
+                String point = "....";
                 for (Path part : this.parts) {
+                    System.out.print("Uniendo partes ..." + point + "\r");
                     Files.copy(part, out);
                 }
+                System.out.println();
             }
+
+            System.out.println("Todas las partes unidas");
 
             for (Path part : this.parts) {
                 Files.delete(part);
@@ -128,8 +157,9 @@ public class App {
 
             if (Files.exists(file)) {
                 System.out.println("############################## DESCARGADO ##############################");
-                System.out.println("TAMAÑO EN WEB: " + length);
-                System.out.println("TAMAÑO EN DISCO: " + Files.size(file));
+                System.out.println("TAMAÑO EN WEB: " + length + " bytes");
+                System.out.println("TAMAÑO EN DISCO: " + Files.size(file) + " bytes");
+                System.out.println("DESCARGADO: " + (length == Files.size(file) ? "CORRECTAMENTE" : "POSIBLES FALLOS"));
                 System.out.println("########################################################################");
             }
 
@@ -144,7 +174,6 @@ public class App {
 
     public URI getDownloadLink() throws URISyntaxException {
 
-        Scanner scan = new Scanner(System.in);
         URI uri = null;
         String link = "";
         while (true) {
@@ -169,11 +198,12 @@ public class App {
 
     public int getDownloadThreadSize() throws URISyntaxException {
 
-        Scanner scan = new Scanner(System.in);
         int size = 0;
 
         while (true) {
+
             System.out.println("Por favor, indica la cantidad de hilos para la descarga simultánea:");
+
             if (scan.hasNextInt()) {
                 size = scan.nextInt();
                 System.out.println();
@@ -183,6 +213,9 @@ public class App {
                 scan.next();
             }
         }
+
+        scan.close();
+
         return size;
     }
 
@@ -190,10 +223,17 @@ public class App {
 
         File partFile = new File(fileName + SUFIX + count);
 
+        app.getParts().add(partFile.toPath());
+
         if (partFile.exists()) {
             start = start + partFile.length();
         }
-        System.out.println(partFile.getName() + " - Range bytes=" + start + "-" + end);
+
+        Long startMbytes = start / 1000 / 1000;
+        Long endMbytes = end / 1000 / 1000;
+
+        System.out.println(partFile.getName() + " - Range Mbytes: " + startMbytes + "/" + endMbytes);
+
         HttpRequest requestFile = HttpRequest.newBuilder()
                 .uri(uri)
                 .header("Range", "bytes=" + start + "-" + end)
@@ -205,10 +245,8 @@ public class App {
             responseFile = client.send(requestFile,
                     HttpResponse.BodyHandlers.ofInputStream());
 
-            app.getParts().add(partFile.toPath());
-
             if (partFile.exists()) {
-                Path tmpFile = Path.of(partFile.getName() + "_tmp");
+
                 try (InputStream in = responseFile.body();
                         OutputStream out = Files.newOutputStream(partFile.toPath(),
                                 StandardOpenOption.APPEND)) {
@@ -217,6 +255,7 @@ public class App {
                 }
 
             } else {
+
                 try (InputStream in = responseFile.body();
                         OutputStream out = Files.newOutputStream(partFile.toPath())) {
 
