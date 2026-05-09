@@ -130,15 +130,10 @@ public class App {
 
             this.finalDownload = true;
 
-            this.parts.stream().forEach(System.out::println);
-            System.err.println();
-
             this.parts = this.parts.stream()
                     .sorted((p1, p2) -> Integer.compare(Integer.parseInt(p1.getFileName().toString().split(SUFIX)[1]),
                             Integer.parseInt(p2.getFileName().toString().split(SUFIX)[1])))
                     .toList();
-
-            this.parts.stream().forEach(System.out::println);
 
             try (OutputStream out = Files.newOutputStream(Path.of(fileName))) {
 
