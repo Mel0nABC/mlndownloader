@@ -39,7 +39,7 @@ public class App {
         startApp.start();
 
         Long endAppTime = System.currentTimeMillis();
-        System.out.println("TIEMPO TRASCURRIDO PARA LA DESCARGA: " + (endAppTime - startAppTime) / 1000);
+        System.out.println("TIEMPO TRASCURRIDO EN LA DESCARGA: " + (endAppTime - startAppTime) / 1000);
     }
 
     public URI getDownloadLink() throws URISyntaxException {
