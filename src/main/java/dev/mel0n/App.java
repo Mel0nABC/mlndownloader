@@ -17,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 
 import org.apache.commons.codec.digest.DigestUtils;
 
@@ -32,26 +33,46 @@ public class App {
 
     public static void main(String[] args) {
         Long startAppTime = System.currentTimeMillis();
+
         App startApp = new App();
         startApp.setApp(startApp);
         startApp.start();
-        Long endAppTime = System.currentTimeMillis();
 
+        Long endAppTime = System.currentTimeMillis();
         System.out.println("TIEMPO TRASCURRIDO PARA LA DESCARGA: " + (endAppTime - startAppTime) / 1000);
+    }
+
+    public URI getDownloadLink() throws URISyntaxException {
+
+        URI uri = null;
+        String link = "";
+        while (true) {
+
+            System.out.println("Por favor, indica el link para descargar:");
+
+            link = new Scanner(System.in).nextLine();
+
+            System.out.println();
+
+            uri = new URI(link);
+
+            if (uri.getScheme() == null) {
+                System.out.println("NO ES URL VÁLIDA, DEBES INDICAR HTTP/HTTPS\n");
+            } else {
+                break;
+            }
+
+        }
+        return uri;
     }
 
     public void start() {
         try {
 
-            // String link =
-            // "https://tacatacomunicacion.com/wp-content/uploads/2015/03/bancos-de-imagenes-gratuitos-1-1024x682.jpg";
-            String link = "https://es.mirrors.cicku.me/archlinux/iso/2026.05.01/archlinux-2026.05.01-x86_64.iso";
-            // String link =
-            // "https://releases.ubuntu.com/26.04/ubuntu-26.04-desktop-amd64.iso";
+            URI uri = app.getDownloadLink();
 
-            
-
-            URI uri = new URI(link);
+            // String link =
+            // "https://es.mirrors.cicku.me/archlinux/iso/2026.05.01/archlinux-2026.05.01-x86_64.iso";
 
             HttpClient client = HttpClient.newHttpClient();
 
