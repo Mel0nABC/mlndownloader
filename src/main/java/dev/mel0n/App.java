@@ -22,7 +22,7 @@ import java.util.Scanner;
 import org.apache.commons.codec.digest.DigestUtils;
 
 /**
- * Hello world!
+ * Multi thread download, only to testing and learn.
  *
  */
 public class App {
