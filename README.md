@@ -14,7 +14,7 @@ Incluye:
 - Descarga multihilo (`Thread`)
 - Unión final de partes en un único archivo
 - Verificación de tamaño final
-- Verificación de checksum SHA-256 (opcional)
+- Resumen de ficheros descargados
 
 ---
 
