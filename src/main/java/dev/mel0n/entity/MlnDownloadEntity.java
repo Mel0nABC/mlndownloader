@@ -4,6 +4,10 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -17,7 +21,11 @@ import java.nio.file.Path;
 @AllArgsConstructor
 @Getter
 @Setter
+@Entity
 public class MlnDownloadEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
     private URI uri;
     private String fileName;

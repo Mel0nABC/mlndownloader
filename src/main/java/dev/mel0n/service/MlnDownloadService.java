@@ -173,13 +173,6 @@ public class MlnDownloadService {
 
             Path file = Path.of(mlnDownloadEntity.getFileName());
 
-            if (Files.exists(file)) {
-                System.out.println("############################## DESCARGADO ##############################");
-                System.out.println("TAMAÑO EN WEB: " + length + " bytes");
-                System.out.println("TAMAÑO EN DISCO: " + Files.size(file) + " bytes");
-                System.out.println("DESCARGADO: " + (length == Files.size(file) ? "CORRECTAMENTE" : "POSIBLES FALLOS"));
-                System.out.println("########################################################################");
-            }
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -217,8 +210,7 @@ public class MlnDownloadService {
             start = start + partFile.length();
         }
 
-        // System.out.println(partFile.getName() + " - Range Bytes: " + start + "/" +
-        // end);
+        System.out.println(partFile.getName() + " - Range Bytes: " + start + "/" + end);
 
         HttpRequest requestFile = HttpRequest.newBuilder()
                 .uri(uri)
@@ -232,6 +224,12 @@ public class MlnDownloadService {
                     HttpResponse.BodyHandlers.ofInputStream());
 
             if (partFile.exists()) {
+
+                System.out.println(start + " - " + end);
+
+                if (start.equals(end)) {
+                    return;
+                }
 
                 try (InputStream in = responseFile.body();
                         OutputStream out = Files.newOutputStream(partFile.toPath(),
@@ -249,11 +247,7 @@ public class MlnDownloadService {
                 }
             }
 
-        } catch (
-
-        IOException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
+        } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
 
@@ -291,5 +285,7 @@ public class MlnDownloadService {
     public Long getByteToMbyte(Long bytes) {
         return bytes / BYTE_TO_MBYTE;
     }
+
+    
 
 }
