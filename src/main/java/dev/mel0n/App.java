@@ -13,9 +13,6 @@ public class App {
 
         MlnDownloadService mlnDownloadService = new MlnDownloadService();
 
-        // URI uri = startApp.getDownloadLink();
-        // int chunks = startApp.getDownloadThreadSize();
-
         try {
             URI uri = new URI(
                     "https://es.mirrors.cicku.me/archlinux/iso/2026.05.01/archlinux-2026.05.01-x86_64.iso");

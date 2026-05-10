@@ -28,8 +28,11 @@ public class MlnDownloadEntity {
     private List<Path> parts = new ArrayList<>();
 
     @Builder.Default
+    private List<Thread> threads = new ArrayList<>();
+
+    @Builder.Default
     private boolean finalDownload = false;
 
     @Builder.Default
-    private Long downloaded = 0L;
+    private Long downloadedBytes = 0L;
 }

@@ -9,22 +9,19 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.web.multipart.MultipartException;
 
 import dev.mel0n.entity.MlnDownloadEntity;
+import dev.mel0n.exception.FileAlreadyDownloadedException;
 
 /**
  * Multi thread download, only to testing and learn.
@@ -33,8 +30,6 @@ import dev.mel0n.entity.MlnDownloadEntity;
 public class MlnDownloadService {
 
     private HttpClient client = HttpClient.newHttpClient();
-    private Scanner scan = new Scanner(System.in);
-    private List<Thread> threads = new ArrayList<>();
     private final String SUFIX = "_PART_";
     private final Long BYTE_TO_MBYTE = 1000000L;
     private final int TO_PERCENT = 100;
@@ -55,26 +50,11 @@ public class MlnDownloadService {
 
             String path = uri.getPath();
             fileName = path.substring(path.lastIndexOf("/") + SOME_BYTE);
-
             length = Long.parseLong(response.headers().map().get("content-length").getFirst());
 
-            // System.out.println("############################## INFORMACIÓN DEL ARCHIVO
-            // ##############################");
-            // System.out.println();
-            // System.out.println("FILE SIZE: " + this.length);
-            // System.out.println("MULTI PART SIZE: " + chunkSize);
-            // System.out.println("TOTAL PARTS: " + this.length / chunkSize);
-            // System.out.println();
-            // System.out.println("Status code: " + response.statusCode());
-            // System.out.println("Accept Ranges: " +
-            // response.headers().map().get("accept-ranges").getFirst());
-            // System.out.println("Tamaño en bytes: " + this.length);
-            // System.out.println();
-            // System.out.println("#####################################################################################");
+            checkNewDownloadExist(fileName, length);
 
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
+        } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
 
@@ -86,6 +66,15 @@ public class MlnDownloadService {
                 .chunks(chunks)
                 .build();
 
+    }
+
+    public void checkNewDownloadExist(String fileName, Long length) {
+
+        File checkFile = new File(fileName);
+
+        if (checkFile.exists() & (checkFile.length() == length)) {
+            throw new FileAlreadyDownloadedException(checkFile.getAbsolutePath());
+        }
     }
 
     public void startDownload(MlnDownloadEntity mlnDownloadEntity) {
@@ -105,13 +94,17 @@ public class MlnDownloadService {
 
                 int finalCount = count;
 
+                String partFileName = mlnDownloadEntity.getFileName() + SUFIX + count;
+
                 Thread thread = new Thread(() -> {
                     this.downPartFile(client, mlnDownloadEntity.getFileName(), finalStart, finalEnd,
-                            mlnDownloadEntity.getUri(), finalCount, mlnDownloadEntity);
+                            mlnDownloadEntity.getUri(), finalCount, mlnDownloadEntity, partFileName);
                 });
 
+                thread.setName(partFileName);
+
                 thread.start();
-                threads.add(thread);
+                mlnDownloadEntity.getThreads().add(thread);
 
                 start = finalEnd + SOME_BYTE;
                 count++;
@@ -136,22 +129,24 @@ public class MlnDownloadService {
                         }
                     });
 
-                    mlnDownloadEntity.setDownloaded(getByteToMbyte(downloaderFilesSize.get()));
+                    mlnDownloadEntity.setDownloadedBytes(downloaderFilesSize.get());
 
                     Long totalMbytes = getByteToMbyte(mlnDownloadEntity.getLength());
-                    float percent = ((float) mlnDownloadEntity.getDownloaded() / (float) totalMbytes) * TO_PERCENT;
+                    float percent = ((float) mlnDownloadEntity.getDownloadedBytes()
+                            / (float) mlnDownloadEntity.getLength()) * TO_PERCENT;
                     int percentInt = (int) percent;
 
                     System.out.print(
-                            "DOWNLOADED : " + percentInt + "%, " + mlnDownloadEntity.getDownloaded() + "/" + totalMbytes
+                            "DOWNLOADED : " + percentInt + "%, "
+                                    + getByteToMbyte(mlnDownloadEntity.getDownloadedBytes()) + "/"
+                                    + totalMbytes
                                     + " MByte\r");
 
                 }
-                System.out.println();
 
             }).start();
 
-            for (Thread t : threads) {
+            for (Thread t : mlnDownloadEntity.getThreads()) {
                 t.join();
             }
 
@@ -162,17 +157,9 @@ public class MlnDownloadService {
                             Integer.parseInt(p2.getFileName().toString().split(SUFIX)[1])))
                     .toList());
 
-            try (OutputStream out = Files.newOutputStream(Path.of(mlnDownloadEntity.getFileName()))) {
+            multipartMerge(mlnDownloadEntity);
 
-                String point = "....";
-                for (Path part : mlnDownloadEntity.getParts()) {
-                    System.out.print("Uniendo partes ..." + point + "\r");
-                    Files.copy(part, out);
-                }
-                System.out.println();
-            }
-
-            if (mlnDownloadEntity.getLength() != mlnDownloadEntity.getDownloaded()) {
+            if (!mlnDownloadEntity.getLength().equals(mlnDownloadEntity.getDownloadedBytes())) {
 
                 throw new MultipartException("Some problem to merge all files");
 
@@ -201,10 +188,28 @@ public class MlnDownloadService {
         }
     }
 
-    public void downPartFile(HttpClient client, String fileName, Long start, Long end, URI uri, int count,
-            MlnDownloadEntity mlnDownloadEntity) {
+    public void multipartMerge(MlnDownloadEntity mlnDownloadEntity) {
 
-        File partFile = new File(fileName + SUFIX + count);
+        try {
+
+            try (OutputStream out = Files.newOutputStream(Path.of(mlnDownloadEntity.getFileName()))) {
+
+                for (Path part : mlnDownloadEntity.getParts()) {
+
+                    Files.copy(part, out);
+
+                }
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void downPartFile(HttpClient client, String fileName, Long start, Long end, URI uri, int count,
+            MlnDownloadEntity mlnDownloadEntity, String partFileName) {
+
+        File partFile = new File(partFileName);
 
         mlnDownloadEntity.getParts().add(partFile.toPath());
 
@@ -212,10 +217,8 @@ public class MlnDownloadService {
             start = start + partFile.length();
         }
 
-        Long startMbytes = start / BYTE_TO_MBYTE;
-        Long endMbytes = end / BYTE_TO_MBYTE;
-
-        System.out.println(partFile.getName() + " - Range Mbytes: " + startMbytes + "/" + endMbytes);
+        // System.out.println(partFile.getName() + " - Range Bytes: " + start + "/" +
+        // end);
 
         HttpRequest requestFile = HttpRequest.newBuilder()
                 .uri(uri)
