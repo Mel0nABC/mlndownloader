@@ -39,11 +39,11 @@
     </dependency>
 
     <!-- https://mvnrepository.com/artifact/org.postgresql/postgresql -->
-    <!-- <dependency>
+    <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
-      <version>42.7.8</version>
-    </dependency> -->
+      <version>42.7.11</version>
+    </dependency>
 
 
     <!-- Source: https://mvnrepository.com/artifact/org.projectlombok/lombok -->
