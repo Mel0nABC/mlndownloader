@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang='es'>
+
+<head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <title>MlnDownloader</title>
+    <link rel='stylesheet' href='main.css'>
+
+    <script>
+
+        document.addEventListener("DOMContentLoaded", () => {
+
+
+            const btn = document.querySelector("#btn");
+
+
+            btn.addEventListener("click", () => {
+                console.log("START DOWNLOAD")
+                createDownload();
+            })
+
+
+            async function createDownload() {
+                try {
+                    const response = await fetch("/api/downloads", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            uri: "https://es.mirrors.cicku.me/archlinux/iso/2026.05.01/archlinux-2026.05.01-x86_64.iso",
+                            chunks: 10
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error("Error en la petición");
+                    }
+
+                    const data = await response.json();
+                    console.log("Respuesta:", data);
+
+                } catch (error) {
+                    console.error("Error:", error);
+                }
+            }
+
+
+        })
+
+
+    </script>
+</head>
+
+<body>
+    <h1>MAIN WEB</h1>
+    <button id="btn">DOWNLOAD</button>
+</body>
+
+</html>

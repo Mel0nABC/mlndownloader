@@ -1,10 +1,10 @@
 package dev.mel0n.exception;
 
-public class FileAlreadyDownloadedException extends RuntimeException {
+public class FileAlreadyDownloadederException extends RuntimeException {
     /**
      * Default constructor
      */
-    public FileAlreadyDownloadedException() {
+    public FileAlreadyDownloadederException() {
         super("File already downloaded");
     }
 
@@ -13,7 +13,7 @@ public class FileAlreadyDownloadedException extends RuntimeException {
      * 
      * @param message specific message String
      */
-    public FileAlreadyDownloadedException(String message) {
+    public FileAlreadyDownloadederException(String message) {
         super("File already downloaded: " + message);
     }
 }

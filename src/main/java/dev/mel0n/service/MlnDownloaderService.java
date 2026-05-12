@@ -15,19 +15,26 @@ import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.codec.digest.DigestUtils;
+import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartException;
 
-import dev.mel0n.entity.MlnDownloadEntity;
-import dev.mel0n.exception.FileAlreadyDownloadedException;
+import dev.mel0n.dto.MlnDownloadderEntityDTO;
+import dev.mel0n.entity.MlnDownloaderEntity;
+import dev.mel0n.exception.FileAlreadyDownloadederException;
+import dev.mel0n.repository.MlnDownloaderReposiroty;
 
 /**
  * Multi thread download, only to testing and learn.
  *
  */
-public class MlnDownloadService {
+@Service
+public class MlnDownloaderService {
+
+    private MlnDownloaderReposiroty mlnDownloaderReposiroty;
 
     private HttpClient client = HttpClient.newHttpClient();
     private final String SUFIX = "_PART_";
@@ -35,8 +42,14 @@ public class MlnDownloadService {
     private final int TO_PERCENT = 100;
     private final int SOME_BYTE = 1;
 
-    public MlnDownloadEntity getDownloadEntityInfo(URI uri, int chunks) {
+    public MlnDownloaderService(MlnDownloaderReposiroty mlnDownloaderReposiroty) {
+        this.mlnDownloaderReposiroty = mlnDownloaderReposiroty;
+    }
 
+    public void newDownload(MlnDownloadderEntityDTO mlnDownloadderEntityDTO) {
+
+        URI uri = mlnDownloadderEntityDTO.uri();
+        int chunks = mlnDownloadderEntityDTO.chunks();
         String fileName = "";
         Long length = 0L;
 
@@ -54,30 +67,25 @@ public class MlnDownloadService {
 
             checkNewDownloadExist(fileName, length);
 
+            mlnDownloaderReposiroty.save(MlnDownloaderEntity.builder()
+                    .uri(uri)
+                    .fileName(fileName)
+                    .length(length)
+                    .chunks(chunks)
+                    .build());
+
+            Optional<MlnDownloaderEntity> mOptional = mlnDownloaderReposiroty.findByFileName(fileName);
+
+            if (!mOptional.isEmpty())
+                startDownload(mOptional.get());
+
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
 
-        return MlnDownloadEntity.builder()
-                .id(1L)
-                .uri(uri)
-                .fileName(fileName)
-                .length(length)
-                .chunks(chunks)
-                .build();
-
     }
 
-    public void checkNewDownloadExist(String fileName, Long length) {
-
-        File checkFile = new File(fileName);
-
-        if (checkFile.exists() & (checkFile.length() == length)) {
-            throw new FileAlreadyDownloadedException(checkFile.getAbsolutePath());
-        }
-    }
-
-    public void startDownload(MlnDownloadEntity mlnDownloadEntity) {
+    public void startDownload(MlnDownloaderEntity mlnDownloadEntity) {
         try {
 
             Long length = mlnDownloadEntity.getLength();
@@ -104,6 +112,7 @@ public class MlnDownloadService {
                 thread.setName(partFileName);
 
                 thread.start();
+
                 mlnDownloadEntity.getThreads().add(thread);
 
                 start = finalEnd + SOME_BYTE;
@@ -111,7 +120,7 @@ public class MlnDownloadService {
 
             }
 
-            System.out.println("Descargando..");
+            System.out.println("################################# Descargando #################################");
 
             new Thread(() -> {
                 while (!mlnDownloadEntity.isFinalDownload()) {
@@ -130,21 +139,18 @@ public class MlnDownloadService {
                     });
 
                     mlnDownloadEntity.setDownloadedBytes(downloaderFilesSize.get());
-
-                    Long totalMbytes = getByteToMbyte(mlnDownloadEntity.getLength());
-                    float percent = ((float) mlnDownloadEntity.getDownloadedBytes()
-                            / (float) mlnDownloadEntity.getLength()) * TO_PERCENT;
-                    int percentInt = (int) percent;
-
-                    System.out.print(
-                            "DOWNLOADED : " + percentInt + "%, "
-                                    + getByteToMbyte(mlnDownloadEntity.getDownloadedBytes()) + "/"
-                                    + totalMbytes
-                                    + " MByte\r");
-
                 }
 
             }).start();
+
+            mlnDownloadEntity.getParts().forEach(p -> {
+
+                Thread threadSpeed = new Thread(() -> {
+                    this.getDownloadSpeed(p.toString(), mlnDownloadEntity);
+                });
+                threadSpeed.setName(p.toString());
+                threadSpeed.start();
+            });
 
             for (Thread t : mlnDownloadEntity.getThreads()) {
                 t.join();
@@ -157,7 +163,27 @@ public class MlnDownloadService {
                             Integer.parseInt(p2.getFileName().toString().split(SUFIX)[1])))
                     .toList());
 
-            multipartMerge(mlnDownloadEntity);
+            new Thread(() -> {
+                multipartMergeAndDelete(mlnDownloadEntity);
+            }).start();
+
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void multipartMergeAndDelete(MlnDownloaderEntity mlnDownloadEntity) {
+
+        try {
+
+            try (OutputStream out = Files.newOutputStream(Path.of(mlnDownloadEntity.getFileName()))) {
+
+                for (Path part : mlnDownloadEntity.getParts()) {
+
+                    Files.copy(part, out);
+
+                }
+            }
 
             if (!mlnDownloadEntity.getLength().equals(mlnDownloadEntity.getDownloadedBytes())) {
 
@@ -171,36 +197,13 @@ public class MlnDownloadService {
 
             }
 
-            Path file = Path.of(mlnDownloadEntity.getFileName());
-
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void multipartMerge(MlnDownloadEntity mlnDownloadEntity) {
-
-        try {
-
-            try (OutputStream out = Files.newOutputStream(Path.of(mlnDownloadEntity.getFileName()))) {
-
-                for (Path part : mlnDownloadEntity.getParts()) {
-
-                    Files.copy(part, out);
-
-                }
-            }
-
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     public void downPartFile(HttpClient client, String fileName, Long start, Long end, URI uri, int count,
-            MlnDownloadEntity mlnDownloadEntity, String partFileName) {
+            MlnDownloaderEntity mlnDownloadEntity, String partFileName) {
 
         File partFile = new File(partFileName);
 
@@ -209,8 +212,6 @@ public class MlnDownloadService {
         if (partFile.exists()) {
             start = start + partFile.length();
         }
-
-        System.out.println(partFile.getName() + " - Range Bytes: " + start + "/" + end);
 
         HttpRequest requestFile = HttpRequest.newBuilder()
                 .uri(uri)
@@ -224,8 +225,6 @@ public class MlnDownloadService {
                     HttpResponse.BodyHandlers.ofInputStream());
 
             if (partFile.exists()) {
-
-                System.out.println(start + " - " + end);
 
                 if (start.equals(end)) {
                     return;
@@ -251,6 +250,17 @@ public class MlnDownloadService {
             e.printStackTrace();
         }
 
+    }
+
+    public void checkNewDownloadExist(String fileName, Long length) {
+
+        File checkFile = new File(fileName);
+
+        Optional<MlnDownloaderEntity> mOptional = mlnDownloaderReposiroty.findByFileName(fileName);
+
+        if (checkFile.exists() & (checkFile.length() == length) | !mOptional.isEmpty()) {
+            throw new FileAlreadyDownloadederException(checkFile.getAbsolutePath());
+        }
     }
 
     public void checkSum(String fileName, String fileCheckSum)
@@ -286,6 +296,27 @@ public class MlnDownloadService {
         return bytes / BYTE_TO_MBYTE;
     }
 
-    
+    public void getDownloadSpeed(String partFilename, MlnDownloaderEntity mlnDownloadEntity) {
+
+        while (!mlnDownloadEntity.isFinalDownload()) {
+            File file = new File(partFilename);
+
+            if (file.exists()) {
+
+                if (partFilename.endsWith("_PART_1")) {
+
+                    Long startSize = file.length();
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    Long endSize = file.length();
+                }
+
+            }
+        }
+
+    }
 
 }

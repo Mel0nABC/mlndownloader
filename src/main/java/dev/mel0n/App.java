@@ -1,51 +1,24 @@
 package dev.mel0n;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.io.File;
 
-import dev.mel0n.entity.MlnDownloadEntity;
-import dev.mel0n.service.MlnDownloadService;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+@SpringBootApplication
 public class App {
+
+    private static final String DATA_FOLDER = "data";
 
     public static void main(String[] args) {
 
-        try {
+        // Check and create data folter
+        File file = new File(DATA_FOLDER);
 
-            Long startAppTime = System.currentTimeMillis();
+        if (!file.exists())
+            file.mkdir();
 
-            MlnDownloadService mlnDownloadService = new MlnDownloadService();
-
-            URI uri = new URI(
-                    "https://es.mirrors.cicku.me/archlinux/iso/2026.05.01/archlinux-2026.05.01-x86_64.iso");
-            int chunks = 20;
-
-            MlnDownloadEntity mlnDownloadEntity = mlnDownloadService.getDownloadEntityInfo(uri, chunks);
-            mlnDownloadService.startDownload(mlnDownloadEntity);
-
-            Long endAppTime = System.currentTimeMillis();
-            System.out.println("TIEMPO TRASCURRIDO EN LA DESCARGA: " + (endAppTime - startAppTime) / 1000);
-
-            if (Files.exists(Path.of(mlnDownloadEntity.getFileName()))) {
-                System.out.println("############################## DESCARGADO ##############################");
-                System.out.println("TAMAÑO EN WEB: " + mlnDownloadEntity.getLength() + " bytes");
-                System.out
-                        .println("TAMAÑO EN DISCO: " + Files.size(Path.of(mlnDownloadEntity.getFileName())) + " bytes");
-                System.out.println("DESCARGADO: "
-                        + (mlnDownloadEntity.getLength() == Files.size(Path.of(mlnDownloadEntity.getFileName()))
-                                ? "CORRECTAMENTE"
-                                : "POSIBLES FALLOS"));
-                System.out.println("########################################################################");
-            }
-
-        } catch (URISyntaxException | IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
+        SpringApplication.run(App.class, args);
 
     }
-
 }

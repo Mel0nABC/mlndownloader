@@ -1,0 +1,24 @@
+Realizado:
+
+- descarga normal.
+- descarga multi chunks
+- resumen
+
+Quizá ponga cosas como:
+
+
+- cancelar descarga
+- pausar
+
+- aportar checksum para finalizar comprobar.
+- ajuste de velocidad máxima global
+- ajuste de velocidad por descarga.
+
+
+
+
+COSAS:
+
+
+
+- Si la descarga ya existe, avisar y, en base a la respuesta si se descarga, renombrar el archivo destino añadiendo (1), (2) ...
