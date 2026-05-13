@@ -3,7 +3,6 @@ package dev.mel0n.service;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -15,6 +14,7 @@ import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -25,10 +25,11 @@ import org.springframework.web.multipart.MultipartException;
 import dev.mel0n.dto.MlnDownloadderEntityDTO;
 import dev.mel0n.entity.MlnDownloaderEntity;
 import dev.mel0n.exception.FileAlreadyDownloadederException;
+import dev.mel0n.exception.FileNotFoundException;
 import dev.mel0n.repository.MlnDownloaderReposiroty;
 
 /**
- * Multi thread download, only to testing and learn.
+ * Multi thread download service
  *
  */
 @Service
@@ -42,15 +43,43 @@ public class MlnDownloaderService {
     private final int TO_PERCENT = 100;
     private final int SOME_BYTE = 1;
 
+    /**
+     * Default constructor to inyect dependencies
+     * 
+     * @param mlnDownloaderReposiroty data base access
+     */
     public MlnDownloaderService(MlnDownloaderReposiroty mlnDownloaderReposiroty) {
         this.mlnDownloaderReposiroty = mlnDownloaderReposiroty;
     }
 
+    /**
+     * Send all download activity
+     * 
+     * @return list from downloads information
+     */
+    public List<MlnDownloaderEntity> getAllDownloads() {
+        return mlnDownloaderReposiroty.findAll();
+    }
+
+    public void deleteDownload(Long id) {
+        Optional<MlnDownloaderEntity> mOptional = this.mlnDownloaderReposiroty.findById(id);
+
+        if (mOptional.isEmpty())
+            throw new FileNotFoundException("La descarga que intenta eliminar no se encuentra en la base de datos");
+
+        this.mlnDownloaderReposiroty.delete(mOptional.get());
+    }
+
+    /**
+     * To start new download
+     * 
+     * @param mlnDownloadderEntityDTO basic information to create new download
+     */
     public void newDownload(MlnDownloadderEntityDTO mlnDownloadderEntityDTO) {
 
         URI uri = mlnDownloadderEntityDTO.uri();
         int chunks = mlnDownloadderEntityDTO.chunks();
-        String fileName = "";
+        String fileName = mlnDownloadderEntityDTO.fileName();
         Long length = 0L;
 
         try {
@@ -61,8 +90,6 @@ public class MlnDownloaderService {
 
             HttpResponse<Void> response = client.send(request, HttpResponse.BodyHandlers.discarding());
 
-            String path = uri.getPath();
-            fileName = path.substring(path.lastIndexOf("/") + SOME_BYTE);
             length = Long.parseLong(response.headers().map().get("content-length").getFirst());
 
             checkNewDownloadExist(fileName, length);
@@ -85,6 +112,11 @@ public class MlnDownloaderService {
 
     }
 
+    /**
+     * When new download is create, start this download
+     * 
+     * @param mlnDownloadEntity
+     */
     public void startDownload(MlnDownloaderEntity mlnDownloadEntity) {
         try {
 
@@ -100,13 +132,10 @@ public class MlnDownloaderService {
 
                 Long finalEnd = (start + chunkSize) > length ? length : start + chunkSize - SOME_BYTE;
 
-                int finalCount = count;
-
                 String partFileName = mlnDownloadEntity.getFileName() + SUFIX + count;
 
                 Thread thread = new Thread(() -> {
-                    this.downPartFile(client, mlnDownloadEntity.getFileName(), finalStart, finalEnd,
-                            mlnDownloadEntity.getUri(), finalCount, mlnDownloadEntity, partFileName);
+                    this.downPartFile(mlnDownloadEntity, finalStart, finalEnd, partFileName);
                 });
 
                 thread.setName(partFileName);
@@ -172,6 +201,11 @@ public class MlnDownloaderService {
         }
     }
 
+    /**
+     * When download have multi files, merge all in finish file
+     * 
+     * @param mlnDownloadEntity
+     */
     public void multipartMergeAndDelete(MlnDownloaderEntity mlnDownloadEntity) {
 
         try {
@@ -202,8 +236,15 @@ public class MlnDownloaderService {
         }
     }
 
-    public void downPartFile(HttpClient client, String fileName, Long start, Long end, URI uri, int count,
-            MlnDownloaderEntity mlnDownloadEntity, String partFileName) {
+    /**
+     * When download have multi part, get independent downloads
+     * 
+     * @param mlnDownloadEntity download information
+     * @param start             start chunk range
+     * @param end               end chunk range
+     * @param partFileName      chunk file name
+     */
+    public void downPartFile(MlnDownloaderEntity mlnDownloadEntity, Long start, Long end, String partFileName) {
 
         File partFile = new File(partFileName);
 
@@ -214,14 +255,14 @@ public class MlnDownloaderService {
         }
 
         HttpRequest requestFile = HttpRequest.newBuilder()
-                .uri(uri)
+                .uri(mlnDownloadEntity.getUri())
                 .header("Range", "bytes=" + start + "-" + end)
                 .GET()
                 .build();
 
         HttpResponse<InputStream> responseFile;
         try {
-            responseFile = client.send(requestFile,
+            responseFile = this.client.send(requestFile,
                     HttpResponse.BodyHandlers.ofInputStream());
 
             if (partFile.exists()) {
@@ -252,6 +293,12 @@ public class MlnDownloaderService {
 
     }
 
+    /**
+     * Comprove if downloading file exist in database and local folder
+     * 
+     * @param fileName file name to check
+     * @param length   file size in bytes
+     */
     public void checkNewDownloadExist(String fileName, Long length) {
 
         File checkFile = new File(fileName);
@@ -263,35 +310,12 @@ public class MlnDownloaderService {
         }
     }
 
-    public void checkSum(String fileName, String fileCheckSum)
-            throws FileNotFoundException, IOException, InterruptedException {
-
-        try (InputStream is = new FileInputStream(fileName)) {
-
-            String sha256 = DigestUtils.sha256Hex(is);
-
-            System.out.println(sha256);
-        }
-        ProcessBuilder pb = new ProcessBuilder("sha256sum", "-c", fileCheckSum);
-
-        Process p = pb.start();
-
-        // Leer stdout
-        BufferedReader reader = new BufferedReader(
-                new InputStreamReader(p.getInputStream()));
-
-        String linea;
-
-        while ((linea = reader.readLine()) != null) {
-
-            System.out.println(linea);
-        }
-
-        int exitCode = p.waitFor();
-
-        System.out.println("Código de salida: " + exitCode);
-    }
-
+    /**
+     * Convert bytes to mbytes
+     * 
+     * @param bytes bytes size
+     * @return Long with mbytes size
+     */
     public Long getByteToMbyte(Long bytes) {
         return bytes / BYTE_TO_MBYTE;
     }

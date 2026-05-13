@@ -1,5 +1,6 @@
 package dev.mel0n.controller;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
@@ -13,23 +14,62 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import dev.mel0n.dto.MlnDownloadderEntityDTO;
+import dev.mel0n.entity.MlnDownloaderEntity;
 import dev.mel0n.service.MlnDownloaderService;
 
+/**
+ * Controller to manage download options
+ */
 @Controller
 @RequestMapping("/api")
 public class MlnDownloaderController {
 
     private MlnDownloaderService mlnDownloaderService;
 
+    /**
+     * Constructir to inyect dependencies
+     * 
+     * @param mlnDownloaderService
+     */
     public MlnDownloaderController(MlnDownloaderService mlnDownloaderService) {
         this.mlnDownloaderService = mlnDownloaderService;
     }
 
-    @GetMapping("/main")
-    public String main() {
-        return "html";
+    /**
+     * Obtain all download activity
+     * 
+     * @return ResponseEntity with map, message value List<MlnDownloaderEntity> with
+     *         all download activity
+     */
+    @GetMapping("/downloads")
+    public ResponseEntity<Map<String, Object>> getAllDownloads() {
+        return ResponseEntity
+                .ok(Map.of("success", true, "message", this.mlnDownloaderService.getAllDownloads()));
     }
 
+    /**
+     * 
+     * Delete download activity
+     * 
+     * @param id Long to delete download activity
+     * @return ResponseEntity with map, message value is a String text
+     */
+    @DeleteMapping("/downloads/{id}")
+    public ResponseEntity<Map<String, Object>> deleteDownloaded(@PathVariable Long id) {
+
+        this.mlnDownloaderService.deleteDownload(id);
+
+        return ResponseEntity
+                .ok(Map.of("success", true, "message", "La descarga se elimino satisfactoriamente"));
+    }
+
+    /**
+     * 
+     * Create new download and start automatic
+     * 
+     * @param mlnDownloadderEntityDTO basic informatión tu create new download
+     * @return ResponseEntity with map, message value is a String text
+     */
     @PostMapping("/downloads")
     public ResponseEntity<Map<String, Object>> newDownload(
             @RequestBody MlnDownloadderEntityDTO mlnDownloadderEntityDTO) {
@@ -40,16 +80,16 @@ public class MlnDownloaderController {
                 .ok(Map.of("success", true, "message", "Descarga iniciada"));
     }
 
+    /**
+     * 
+     * To pause or resume download activity
+     * 
+     * @param id Long from download activity
+     * @return ResponseEntity with map, message value is a String text
+     */
     @PutMapping("/downloads/{id}")
     public ResponseEntity<Map<String, Object>> pauseOrResumeDownload(@PathVariable Long id) {
 
         return ResponseEntity.ok(Map.of("success", true, "message", "Descarga pausada"));
     }
-
-    @DeleteMapping("/downloads/{id}")
-    public ResponseEntity<Map<String, Object>> stopDownload(@PathVariable Long id) {
-
-        return ResponseEntity.ok(Map.of("success", true, "message", "Descarga cancelada"));
-    }
-
 }

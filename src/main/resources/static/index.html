@@ -11,43 +11,141 @@
 
         document.addEventListener("DOMContentLoaded", () => {
 
+            const urlInput = document.querySelector("#urlInput");
+            const chucksInput = document.querySelector("#chucksInput");
+            const fileNameInput = document.querySelector("#fileNameInput");
+
+            urlInput.addEventListener("change", () => {
+                try {
+                    const url = new URL(urlInput.value);
+                    const path = url.pathname;
+                    const fileName = path.substring(path.lastIndexOf("/") + 1);
+
+                    fileNameInput.value = fileName;
+                } catch (e) {
+                    fileNameInput.value = "";
+                }
+            })
 
             const btn = document.querySelector("#btn");
-
-
             btn.addEventListener("click", () => {
                 console.log("START DOWNLOAD")
-                createDownload();
+
+                const urlInputText = urlInput.value.trim()
+                const chucksInputText = chucksInput.value.trim()
+                const fileNameInputText = fileNameInput.value.trim()
+
+
+                if (urlInputText == "") {
+                    alert("Debes introducir una URL antes de continuar");
+                    return;
+                }
+
+                if (chucksInputText == "") {
+                    alert("Debes indicar cuantas partes simultáneas descargar");
+                    return;
+                }
+
+                if (fileNameInputText == "") {
+                    alert("Debes introducir un nombre de archivo");
+                    return;
+                }
+
+
+                download(urlInput.value, chucksInput.value, fileNameInput.value);
+            })
+
+            const updateDownloads = document.querySelector("#updateDownloads");
+            updateDownloads.addEventListener("click", () => {
+                console.log("UPDATE DOWNLOAD")
+                getAllDownloads();
+            })
+
+            const deleteDownloadEntity = document.querySelector("#deleteDownloadEntity");
+            deleteDownloadEntity.addEventListener("click", () => {
+                console.log("DELETE DOWNLOAD")
+                deleteDownloaded();
             })
 
 
-            async function createDownload() {
-                try {
-                    const response = await fetch("/api/downloads", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify({
-                            uri: "https://es.mirrors.cicku.me/archlinux/iso/2026.05.01/archlinux-2026.05.01-x86_64.iso",
-                            chunks: 10
-                        })
-                    });
-
-                    if (!response.ok) {
-                        throw new Error("Error en la petición");
-                    }
-
-                    const data = await response.json();
-                    console.log("Respuesta:", data);
-
-                } catch (error) {
-                    console.error("Error:", error);
-                }
-            }
 
 
         })
+
+        async function getAllDownloads() {
+            try {
+                const response = await fetch("/api/downloads", {
+                    method: "GET"
+                });
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    alert(data.message)
+                }
+
+                console.log("Respuesta:", data.message);
+
+            } catch (error) {
+                console.error("Error:", error);
+            }
+        }
+
+
+        async function download(urlInput, chucksInput, fileNameInput) {
+            try {
+
+                const response = await fetch("/api/downloads", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        uri: urlInput,
+                        chunks: chucksInput,
+                        fileName: fileNameInput
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    alert(data.message)
+                }
+
+                console.log("Respuesta:", data.message);
+
+            } catch (error) {
+                console.error("Error:", error);
+            }
+        }
+
+
+        async function deleteDownloaded() {
+            try {
+
+                const deleteInput = document.querySelector("#deleteInput").value;
+
+                console.log(deleteInput)
+
+                const response = await fetch("/api/downloads/" + deleteInput, {
+                    method: "DELETE"
+                });
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    alert(data.message)
+                }
+
+                console.log("Respuesta:", data.message);
+
+            } catch (error) {
+                console.error("Error:", error);
+            }
+        }
+
+
 
 
     </script>
@@ -55,7 +153,14 @@
 
 <body>
     <h1>MAIN WEB</h1>
+    <button id="updateDownloads">UPDATE</button>
+    <br>
+    <input type="text" id="urlInput">
+    <input type="number" id="chucksInput">
+    <input type="text" id="fileNameInput">
     <button id="btn">DOWNLOAD</button>
+
+    <input type="number" id="deleteInput"><button id="deleteDownloadEntity">DELETE FROM LIST</button>
 </body>
 
 </html>

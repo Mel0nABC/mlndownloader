@@ -7,12 +7,10 @@ import java.util.List;
 import dev.mel0n.converter.PathConverter;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
-import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Transient;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,6 +20,9 @@ import lombok.Setter;
 
 import java.nio.file.Path;
 
+/**
+ * Class to save download activity
+ */
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor

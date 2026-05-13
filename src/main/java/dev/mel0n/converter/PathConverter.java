@@ -14,6 +14,9 @@ import jakarta.persistence.Converter;
 @Converter(autoApply = true)
 public class PathConverter implements AttributeConverter<List<Path>, String> {
 
+    /**
+     * Conver Path to String with deliminer
+     */
     @Override
     public String convertToDatabaseColumn(List<Path> attribute) {
         return attribute == null ? null
@@ -22,6 +25,9 @@ public class PathConverter implements AttributeConverter<List<Path>, String> {
                         .collect(Collectors.joining(";"));
     }
 
+    /**
+     * Convert String with delimiter in List<Path>
+     */
     @Override
     public List<Path> convertToEntityAttribute(String dbData) {
 

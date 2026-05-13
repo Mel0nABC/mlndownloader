@@ -6,6 +6,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import dev.mel0n.entity.MlnDownloaderEntity;
 
+/**
+ * Interface to have data base access
+ */
 public interface MlnDownloaderReposiroty extends JpaRepository<MlnDownloaderEntity, Long> {
 
     Optional<MlnDownloaderEntity> findByFileName(String fileName);

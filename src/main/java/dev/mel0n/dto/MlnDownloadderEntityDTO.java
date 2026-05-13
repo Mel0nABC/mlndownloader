@@ -9,6 +9,7 @@ import lombok.Builder;
  */
 @Builder
 public record MlnDownloadderEntityDTO(
-        URI uri,
-        int chunks) {
+                URI uri,
+                int chunks,
+                String fileName) {
 }
