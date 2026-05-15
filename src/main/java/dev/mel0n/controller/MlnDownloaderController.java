@@ -1,6 +1,5 @@
 package dev.mel0n.controller;
 
-import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
@@ -14,7 +13,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import dev.mel0n.dto.MlnDownloadderEntityDTO;
-import dev.mel0n.entity.MlnDownloaderEntity;
 import dev.mel0n.service.MlnDownloaderService;
 
 /**
@@ -54,10 +52,10 @@ public class MlnDownloaderController {
      * @param id Long to delete download activity
      * @return ResponseEntity with map, message value is a String text
      */
-    @DeleteMapping("/downloads/{id}")
-    public ResponseEntity<Map<String, Object>> deleteDownloaded(@PathVariable Long id) {
+    @DeleteMapping("/downloads/{fileName}")
+    public ResponseEntity<Map<String, Object>> deleteDownloaded(@PathVariable String fileName) {
 
-        this.mlnDownloaderService.deleteDownload(id);
+        this.mlnDownloaderService.deleteDownload(fileName);
 
         return ResponseEntity
                 .ok(Map.of("success", true, "message", "La descarga se elimino satisfactoriamente"));
@@ -77,7 +75,7 @@ public class MlnDownloaderController {
         this.mlnDownloaderService.newDownload(mlnDownloadderEntityDTO);
 
         return ResponseEntity
-                .ok(Map.of("success", true, "message", "Descarga iniciada"));
+                .ok(Map.of("success", true, "message", "Nueva descarga iniciada"));
     }
 
     /**
@@ -87,8 +85,10 @@ public class MlnDownloaderController {
      * @param id Long from download activity
      * @return ResponseEntity with map, message value is a String text
      */
-    @PutMapping("/downloads/{id}")
-    public ResponseEntity<Map<String, Object>> pauseOrResumeDownload(@PathVariable Long id) {
+    @PutMapping("/downloads/{fileName}")
+    public ResponseEntity<Map<String, Object>> pauseOrResumeDownload(@PathVariable String fileName) {
+
+        this.mlnDownloaderService.pauseOrResumeDownload(fileName);
 
         return ResponseEntity.ok(Map.of("success", true, "message", "Descarga pausada"));
     }

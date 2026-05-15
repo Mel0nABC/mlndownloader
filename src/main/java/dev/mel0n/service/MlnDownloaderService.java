@@ -1,32 +1,30 @@
 package dev.mel0n.service;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartException;
 
 import dev.mel0n.dto.MlnDownloadderEntityDTO;
 import dev.mel0n.entity.MlnDownloaderEntity;
 import dev.mel0n.exception.FileAlreadyDownloadederException;
+import dev.mel0n.exception.FileAlreadyInDownloadListException;
 import dev.mel0n.exception.FileNotFoundException;
-import dev.mel0n.repository.MlnDownloaderReposiroty;
 
 /**
  * Multi thread download service
@@ -35,22 +33,11 @@ import dev.mel0n.repository.MlnDownloaderReposiroty;
 @Service
 public class MlnDownloaderService {
 
-    private MlnDownloaderReposiroty mlnDownloaderReposiroty;
-
     private HttpClient client = HttpClient.newHttpClient();
-    private final String SUFIX = "_PART_";
+    public static final String SUFIX = "_PART_";
     private final Long BYTE_TO_MBYTE = 1000000L;
-    private final int TO_PERCENT = 100;
     private final int SOME_BYTE = 1;
-
-    /**
-     * Default constructor to inyect dependencies
-     * 
-     * @param mlnDownloaderReposiroty data base access
-     */
-    public MlnDownloaderService(MlnDownloaderReposiroty mlnDownloaderReposiroty) {
-        this.mlnDownloaderReposiroty = mlnDownloaderReposiroty;
-    }
+    private List<MlnDownloaderEntity> mlnDownloadList = new ArrayList<>();
 
     /**
      * Send all download activity
@@ -58,16 +45,7 @@ public class MlnDownloaderService {
      * @return list from downloads information
      */
     public List<MlnDownloaderEntity> getAllDownloads() {
-        return mlnDownloaderReposiroty.findAll();
-    }
-
-    public void deleteDownload(Long id) {
-        Optional<MlnDownloaderEntity> mOptional = this.mlnDownloaderReposiroty.findById(id);
-
-        if (mOptional.isEmpty())
-            throw new FileNotFoundException("La descarga que intenta eliminar no se encuentra en la base de datos");
-
-        this.mlnDownloaderReposiroty.delete(mOptional.get());
+        return this.mlnDownloadList;
     }
 
     /**
@@ -75,11 +53,11 @@ public class MlnDownloaderService {
      * 
      * @param mlnDownloadderEntityDTO basic information to create new download
      */
-    public void newDownload(MlnDownloadderEntityDTO mlnDownloadderEntityDTO) {
+    public void newDownload(MlnDownloadderEntityDTO mlnDownloaderEntityDTO) {
 
-        URI uri = mlnDownloadderEntityDTO.uri();
-        int chunks = mlnDownloadderEntityDTO.chunks();
-        String fileName = mlnDownloadderEntityDTO.fileName();
+        URI uri = mlnDownloaderEntityDTO.uri();
+        int chunks = mlnDownloaderEntityDTO.chunks();
+        String fileName = mlnDownloaderEntityDTO.fileName();
         Long length = 0L;
 
         try {
@@ -94,17 +72,16 @@ public class MlnDownloaderService {
 
             checkNewDownloadExist(fileName, length);
 
-            mlnDownloaderReposiroty.save(MlnDownloaderEntity.builder()
+            MlnDownloaderEntity mlnDownloaderEntity = MlnDownloaderEntity.builder()
                     .uri(uri)
                     .fileName(fileName)
                     .length(length)
                     .chunks(chunks)
-                    .build());
+                    .build();
 
-            Optional<MlnDownloaderEntity> mOptional = mlnDownloaderReposiroty.findByFileName(fileName);
+            mlnDownloadList.add(mlnDownloaderEntity);
 
-            if (!mOptional.isEmpty())
-                startDownload(mOptional.get());
+            startDownload(mlnDownloaderEntity);
 
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
@@ -115,16 +92,18 @@ public class MlnDownloaderService {
     /**
      * When new download is create, start this download
      * 
-     * @param mlnDownloadEntity
+     * @param mlnDownloaderEntity
      */
-    public void startDownload(MlnDownloaderEntity mlnDownloadEntity) {
+    public void startDownload(MlnDownloaderEntity mlnDownloaderEntity) {
         try {
 
-            Long length = mlnDownloadEntity.getLength();
-            Long chunkSize = length / mlnDownloadEntity.getChunks();
+            Long length = mlnDownloaderEntity.getLength();
+            Long chunkSize = length / mlnDownloaderEntity.getChunks();
 
             Long start = 0L;
             int count = 0;
+
+            System.out.println("################################# Descargando #################################");
 
             while (start < length) {
 
@@ -132,73 +111,38 @@ public class MlnDownloaderService {
 
                 Long finalEnd = (start + chunkSize) > length ? length : start + chunkSize - SOME_BYTE;
 
-                String partFileName = mlnDownloadEntity.getFileName() + SUFIX + count;
+                String partFileName = mlnDownloaderEntity.getFileName() + SUFIX + count;
 
-                Thread thread = new Thread(() -> {
-                    this.downPartFile(mlnDownloadEntity, finalStart, finalEnd, partFileName);
-                });
-
-                thread.setName(partFileName);
-
-                thread.start();
-
-                mlnDownloadEntity.getThreads().add(thread);
+                this.downPartFile(mlnDownloaderEntity, finalStart, finalEnd, partFileName);
 
                 start = finalEnd + SOME_BYTE;
                 count++;
 
             }
 
-            System.out.println("################################# Descargando #################################");
+            System.out.println("###############################################################################");
 
-            new Thread(() -> {
-                while (!mlnDownloadEntity.isFinalDownload()) {
+            startDownloadControl(mlnDownloaderEntity);
 
-                    AtomicLong downloaderFilesSize = new AtomicLong(0);
-
-                    mlnDownloadEntity.getParts().forEach(p -> {
-                        try {
-
-                            if (Files.exists(p))
-                                downloaderFilesSize.addAndGet(Files.size(p));
-
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    });
-
-                    mlnDownloadEntity.setDownloadedBytes(downloaderFilesSize.get());
-                }
-
-            }).start();
-
-            mlnDownloadEntity.getParts().forEach(p -> {
-
-                Thread threadSpeed = new Thread(() -> {
-                    this.getDownloadSpeed(p.toString(), mlnDownloadEntity);
-                });
-                threadSpeed.setName(p.toString());
-                threadSpeed.start();
-            });
-
-            for (Thread t : mlnDownloadEntity.getThreads()) {
-                t.join();
-            }
-
-            mlnDownloadEntity.setFinalDownload(true);
-
-            mlnDownloadEntity.setParts(mlnDownloadEntity.getParts().stream()
-                    .sorted((p1, p2) -> Integer.compare(Integer.parseInt(p1.getFileName().toString().split(SUFIX)[1]),
-                            Integer.parseInt(p2.getFileName().toString().split(SUFIX)[1])))
-                    .toList());
-
-            new Thread(() -> {
-                multipartMergeAndDelete(mlnDownloadEntity);
-            }).start();
-
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            // System.out.println("PARADOOOOOOOOOOOOOOOOO");
         }
+    }
+
+    public void startDownloadControl(MlnDownloaderEntity mlnDownloaderEntity) {
+        controlDownloaderSize(mlnDownloaderEntity);
+        startSpeedControl(mlnDownloaderEntity);
+
+        for (CompletableFuture<HttpResponse<Path>> t : mlnDownloaderEntity.getFutures()) {
+            System.err.println("JOINING");
+            t.join();
+        }
+
+        new Thread(() -> {
+            multipartMergeAndDelete(mlnDownloaderEntity);
+        }).start();
+
+        System.out.println("FINISH DOWNLOAD AND MERGE");
     }
 
     /**
@@ -210,14 +154,22 @@ public class MlnDownloaderService {
 
         try {
 
+            stopDownloadWorkers(mlnDownloadEntity);
+
+            System.out.println("############################ Merge downloaded files ############################");
+
             try (OutputStream out = Files.newOutputStream(Path.of(mlnDownloadEntity.getFileName()))) {
 
-                for (Path part : mlnDownloadEntity.getParts()) {
+                for (Path part : mlnDownloadEntity.getParts().keySet()) {
+
+                    System.out.println("MERGE: " + part);
 
                     Files.copy(part, out);
 
                 }
             }
+
+            System.out.println("################################################################################");
 
             if (!mlnDownloadEntity.getLength().equals(mlnDownloadEntity.getDownloadedBytes())) {
 
@@ -225,10 +177,26 @@ public class MlnDownloaderService {
 
             } else {
 
-                for (Path part : mlnDownloadEntity.getParts()) {
-                    Files.delete(part);
+                System.out.println("######################## Delete downloaded temp files ########################");
+
+                for (Path part : mlnDownloadEntity.getParts().keySet()) {
+
+                    File file = new File(part.toString());
+
+                    if (file.exists())
+                        file.delete();
+
+                    if (!file.exists())
+                        System.out.println("DELETE: " + part);
+
                 }
 
+                System.out.println("##############################################################################");
+            }
+
+            if (Files.exists(Path.of(mlnDownloadEntity.getFileName()))) {
+                mlnDownloadEntity.setDownloading(false);
+                mlnDownloadEntity.setDownloaded(true);
             }
 
         } catch (IOException e) {
@@ -248,10 +216,8 @@ public class MlnDownloaderService {
 
         File partFile = new File(partFileName);
 
-        mlnDownloadEntity.getParts().add(partFile.toPath());
-
-        if (partFile.exists()) {
-            start = start + partFile.length();
+        if (mlnDownloadEntity.getParts().get(partFile.toPath()) == null) {
+            mlnDownloadEntity.getParts().put(partFile.toPath(), start + "-" + end);
         }
 
         HttpRequest requestFile = HttpRequest.newBuilder()
@@ -260,37 +226,112 @@ public class MlnDownloaderService {
                 .GET()
                 .build();
 
-        HttpResponse<InputStream> responseFile;
-        try {
-            responseFile = this.client.send(requestFile,
-                    HttpResponse.BodyHandlers.ofInputStream());
+        CompletableFuture<HttpResponse<Path>> future = client.sendAsync(
+                requestFile,
+                HttpResponse.BodyHandlers.ofFile(
+                        partFile.toPath(),
+                        StandardOpenOption.CREATE,
+                        StandardOpenOption.WRITE,
+                        StandardOpenOption.APPEND));
 
-            if (partFile.exists()) {
+        mlnDownloadEntity.getFutures().add(future);
 
-                if (start.equals(end)) {
-                    return;
-                }
+        System.out.println("DOWNLOAD: " + partFile + " - " + "Range bytes=" + start + "-" + end);
 
-                try (InputStream in = responseFile.body();
-                        OutputStream out = Files.newOutputStream(partFile.toPath(),
-                                StandardOpenOption.APPEND)) {
+    }
 
-                    in.transferTo(out);
-                }
+    public void deleteDownload(String fileName) {
 
-            } else {
+        File file = new File(fileName);
 
-                try (InputStream in = responseFile.body();
-                        OutputStream out = Files.newOutputStream(partFile.toPath())) {
+        if (!file.exists())
+            throw new FileNotFoundException("El archivo que intenta eliminar no existe.");
 
-                    in.transferTo(out);
+        pauseOrResumeDownload(fileName);
+
+        Optional<MlnDownloaderEntity> mOptional = mlnDownloadList.stream().filter(m -> m.getFileName().equals(fileName))
+                .findFirst();
+
+        if (mOptional.isEmpty())
+            throw new FileNotFoundException("El archivo que intenta eliminar no está en la lista de descargas.");
+
+        mOptional.get().getParts().keySet().forEach(p -> {
+
+            File partToDelete = new File(p.toString());
+
+            if (partToDelete.exists())
+                partToDelete.delete();
+
+            if (file.exists())
+                file.delete();
+
+        });
+
+        mlnDownloadList.remove(mOptional.get());
+
+        System.out.println(mlnDownloadList);
+
+    }
+
+    public void pauseOrResumeDownload(String fileName) {
+
+        Optional<MlnDownloaderEntity> mOptional = mlnDownloadList.stream()
+                .filter(down -> down.getFileName().equals(fileName))
+                .findFirst();
+
+        if (mOptional.isEmpty())
+            throw new FileNotFoundException("El archivo que quieres pausar no se encuntra en la lista");
+
+        MlnDownloaderEntity mlnDownloaderEntity = mOptional.get();
+
+        if (mlnDownloaderEntity.isDownloading()) {
+
+            System.out.println("################################# Pause download #################################");
+
+            for (CompletableFuture<HttpResponse<Path>> future : mlnDownloaderEntity.getFutures()) {
+                try {
+                    future.cancel(true);
+                    System.out.println("PAUSE DOWLOAD: " + fileName);
+                } catch (Exception e) {
+                    System.out.println("PETOOOOOOOOO");
                 }
             }
 
-        } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
+            System.out.println("##################################################################################");
+
+            stopDownloadWorkers(mlnDownloaderEntity);
+
+            mlnDownloaderEntity.setDownloading(false);
+
+            mlnDownloaderEntity.getFutures().clear();
+
+            return;
         }
 
+        System.out.println("################################# Resume download #################################");
+
+        mlnDownloaderEntity.getParts().keySet().forEach(p -> {
+
+            File fileSizeDownloaded = new File(p.toString());
+
+            String startAndEnd = mlnDownloaderEntity.getParts().get(p);
+
+            Long start = Long.parseLong(startAndEnd.split("-")[0]);
+            Long finalStart = start + fileSizeDownloaded.length();
+
+            Long finalEnd = Long.parseLong(startAndEnd.split("-")[1]);
+
+            this.downPartFile(mlnDownloaderEntity, finalStart, finalEnd, p.toString());
+
+            System.out.println("RESUME DOWNLOAD -> " + p);
+
+        });
+
+        mlnDownloaderEntity.setDownloading(true);
+
+        startDownloadControl(mlnDownloaderEntity);
+
+        System.out.println("##################################################################################");
     }
 
     /**
@@ -303,11 +344,17 @@ public class MlnDownloaderService {
 
         File checkFile = new File(fileName);
 
-        Optional<MlnDownloaderEntity> mOptional = mlnDownloaderReposiroty.findByFileName(fileName);
-
-        if (checkFile.exists() & (checkFile.length() == length) | !mOptional.isEmpty()) {
-            throw new FileAlreadyDownloadederException(checkFile.getAbsolutePath());
+        if (checkFile.exists() & (checkFile.length() == length)) {
+            throw new FileAlreadyDownloadederException("El archivo ya existe localmente");
         }
+
+        Optional<MlnDownloaderEntity> mOptional = mlnDownloadList.stream().filter(m -> m.getFileName().equals(fileName))
+                .findFirst();
+
+        if (!mOptional.isEmpty()) {
+            throw new FileAlreadyInDownloadListException("Este archivo está en la lista de descarga");
+        }
+
     }
 
     /**
@@ -320,9 +367,15 @@ public class MlnDownloaderService {
         return bytes / BYTE_TO_MBYTE;
     }
 
+    /**
+     * Calculate downloaded bytes in one second
+     * 
+     * @param partFilename
+     * @param mlnDownloadEntity
+     */
     public void getDownloadSpeed(String partFilename, MlnDownloaderEntity mlnDownloadEntity) {
 
-        while (!mlnDownloadEntity.isFinalDownload()) {
+        while (!mlnDownloadEntity.isDownloaded()) {
             File file = new File(partFilename);
 
             if (file.exists()) {
@@ -333,7 +386,7 @@ public class MlnDownloaderService {
                     try {
                         Thread.sleep(1000);
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
+
                     }
                     Long endSize = file.length();
                 }
@@ -341,6 +394,54 @@ public class MlnDownloaderService {
             }
         }
 
+    }
+
+    public void controlDownloaderSize(MlnDownloaderEntity mlnDownloadEntity) {
+
+        Thread threadSetDownloadedSize = new Thread(() -> {
+            while (!mlnDownloadEntity.isDownloaded()) {
+
+                AtomicLong downloaderFilesSize = new AtomicLong(0);
+
+                mlnDownloadEntity.getParts().keySet().forEach(p -> {
+
+                    File file = new File(p.toString());
+
+                    if (file.exists())
+                        downloaderFilesSize.addAndGet(file.length());
+
+                });
+
+                mlnDownloadEntity.setDownloadedBytes(downloaderFilesSize.get());
+            }
+
+        });
+
+        threadSetDownloadedSize.start();
+
+        mlnDownloadEntity.getWorkers().add(threadSetDownloadedSize);
+    }
+
+    public void startSpeedControl(MlnDownloaderEntity mlnDownloadEntity) {
+        mlnDownloadEntity.getParts().keySet().forEach(p -> {
+            Thread threadSpeed = new Thread(() -> {
+                this.getDownloadSpeed(p.toString(), mlnDownloadEntity);
+            });
+            threadSpeed.setName(p.toString());
+            threadSpeed.start();
+            mlnDownloadEntity.getWorkers().add(threadSpeed);
+        });
+    }
+
+    /**
+     * To stop thread
+     * 
+     * @param mlnDownloaderEntity
+     */
+    public void stopDownloadWorkers(MlnDownloaderEntity mlnDownloaderEntity) {
+        for (Thread t : mlnDownloaderEntity.getWorkers()) {
+            t.interrupt();
+        }
     }
 
 }

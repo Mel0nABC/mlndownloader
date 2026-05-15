@@ -14,6 +14,20 @@
             const urlInput = document.querySelector("#urlInput");
             const chucksInput = document.querySelector("#chucksInput");
             const fileNameInput = document.querySelector("#fileNameInput");
+            const pauseOrResumeInput = document.querySelector("#pauseOrResumeInput");
+            const deleteInput = document.querySelector("#deleteInput");
+
+            const url = "https://releases.ubuntu.com/26.04/ubuntu-26.04-desktop-amd64.iso";
+            const file = "ubuntu-26.04-desktop-amd64.iso";
+            // const url = "https://es.mirrors.cicku.me/archlinux/iso/2026.05.01/archlinux-2026.05.01-x86_64.iso";
+            // const file = "archlinux-2026.05.01-x86_64.iso";
+
+            urlInput.value = url;
+            chucksInput.value = 4;
+            fileNameInput.value = file;
+            deleteInput.value = file;
+            pauseOrResumeInput.value = file;
+
 
             urlInput.addEventListener("change", () => {
                 try {
@@ -61,14 +75,18 @@
                 getAllDownloads();
             })
 
-            const deleteDownloadEntity = document.querySelector("#deleteDownloadEntity");
-            deleteDownloadEntity.addEventListener("click", () => {
+            const deleteDownloadBtn = document.querySelector("#deleteDownloadBtn");
+            deleteDownloadBtn.addEventListener("click", () => {
                 console.log("DELETE DOWNLOAD")
                 deleteDownloaded();
             })
 
 
-
+            const pauseOrResumeBtn = document.querySelector("#pauseOrResumeBtn");
+            pauseOrResumeBtn.addEventListener("click", () => {
+                console.log("PAUSE OR RESUME DOWNLOAD")
+                pauseOrResumeDownload();
+            })
 
         })
 
@@ -146,6 +164,31 @@
         }
 
 
+        async function pauseOrResumeDownload() {
+            try {
+
+                const fileName = document.querySelector("#pauseOrResumeInput").value;
+
+                console.log(fileName)
+
+                const response = await fetch("/api/downloads/" + fileName, {
+                    method: "PUT"
+                });
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    alert(data.message)
+                }
+
+                console.log("Respuesta:", data.message);
+
+            } catch (error) {
+                console.error("Error:", error);
+            }
+        }
+
+
 
 
     </script>
@@ -159,8 +202,11 @@
     <input type="number" id="chucksInput">
     <input type="text" id="fileNameInput">
     <button id="btn">DOWNLOAD</button>
+    <br>
+    <input type="text" id="deleteInput"><button id="deleteDownloadBtn">DELETE FROM LIST WITH FILE NAME</button>
 
-    <input type="number" id="deleteInput"><button id="deleteDownloadEntity">DELETE FROM LIST</button>
+    <br>
+    <input type="text" id="pauseOrResumeInput"><button id="pauseOrResumeBtn">PAUSE OR RESUME</button>
 </body>
 
 </html>

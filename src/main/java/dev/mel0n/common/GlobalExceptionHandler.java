@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import dev.mel0n.exception.FileAlreadyDownloadederException;
+import dev.mel0n.exception.FileAlreadyInDownloadListException;
 import dev.mel0n.exception.FileNotFoundException;
 import dev.mel0n.exception.MultipartMergeException;
 import lombok.NoArgsConstructor;
@@ -27,6 +28,18 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(FileAlreadyDownloadederException.class)
     public ResponseEntity<Map<String, Object>> fileAlreadyDownloadederException(Exception e) {
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .body(Map.of("success", false, "message", e.getMessage()));
+    }
+
+    /**
+     * When download is en database but not in hd
+     * 
+     * @param e Exception
+     * @return ResponseEntity with map, message value is a String text
+     */
+    @ExceptionHandler(FileAlreadyInDownloadListException.class)
+    public ResponseEntity<Map<String, Object>> fileAlreadyInDownloadListException(Exception e) {
         return ResponseEntity.status(HttpStatus.FOUND)
                 .body(Map.of("success", false, "message", e.getMessage()));
     }

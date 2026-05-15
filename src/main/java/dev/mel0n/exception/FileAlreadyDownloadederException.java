@@ -14,6 +14,6 @@ public class FileAlreadyDownloadederException extends RuntimeException {
      * @param message specific message String
      */
     public FileAlreadyDownloadederException(String message) {
-        super("File already downloaded: " + message);
+        super(message);
     }
 }

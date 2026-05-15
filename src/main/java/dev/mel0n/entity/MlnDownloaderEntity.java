@@ -1,17 +1,14 @@
 package dev.mel0n.entity;
 
 import java.net.URI;
+import java.net.http.HttpResponse;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.concurrent.CompletableFuture;
 
-import dev.mel0n.converter.PathConverter;
-import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Transient;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -19,6 +16,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.nio.file.Path;
+
+import dev.mel0n.service.MlnDownloaderService;
 
 /**
  * Class to save download activity
@@ -28,37 +27,33 @@ import java.nio.file.Path;
 @AllArgsConstructor
 @Getter
 @Setter
-@Entity
 public class MlnDownloaderEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(nullable = false)
     private URI uri;
-
-    @Column(nullable = false, unique = true)
     private String fileName;
-
-    @Column(nullable = false)
     private Long length;
 
     @Builder.Default
     private int chunks = 1;
 
-    @Convert(converter = PathConverter.class)
-    @Column(length = 99999)
     @Builder.Default
-    private List<Path> parts = new ArrayList<>();
+    private Map<Path, String> parts = new TreeMap<>(
+            Comparator.comparingInt(path -> {
+                return Integer.parseInt(path.toString().split(MlnDownloaderService.SUFIX)[1]);
+            }));
 
     @Builder.Default
-    @Transient
-    private List<Thread> threads = new ArrayList<>();
+    private List<CompletableFuture<HttpResponse<Path>>> futures = new ArrayList<>();
 
     @Builder.Default
-    private boolean finalDownload = false;
+    private boolean isDownloading = true;
+
+    @Builder.Default
+    private boolean isDownloaded = false;
 
     @Builder.Default
     private Long downloadedBytes = 0L;
+
+    @Builder.Default
+    private List<Thread> workers = new ArrayList<>();
 }
