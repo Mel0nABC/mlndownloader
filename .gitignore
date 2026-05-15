@@ -46,3 +46,5 @@ Thumbs.db
 
 data/
 sha256sums.txt
+downloads/
+data.bin

@@ -13,7 +13,7 @@ Realizado:
 ✅ - Limpiar descargas finalizadas
 ❌ - aportar checksum para finalizar comprobar.
 ❌ - ajuste de velocidad máxima global
-❌ - ajuste de velocidad por descarga.
+❌ - ajuste de velocidad por descarga individual.
 
 
 
@@ -22,4 +22,4 @@ COSAS:
 
 
 
-ISSUE : Si se le da a pause o resumen cuando ya finalizó la descarga, vuelve a bajar las partes
+✅ - ISSUE : Si se le da a pause o resumen cuando ya finalizó la descarga, vuelve a bajar las partes

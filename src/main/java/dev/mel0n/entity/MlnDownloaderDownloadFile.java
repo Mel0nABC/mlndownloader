@@ -45,9 +45,6 @@ public class MlnDownloaderDownloadFile implements Serializable {
     private boolean isDownloaded = false;
 
     @Builder.Default
-    private boolean isMergin = false;
-
-    @Builder.Default
     private boolean isFileExist = true;
 
     @Builder.Default
