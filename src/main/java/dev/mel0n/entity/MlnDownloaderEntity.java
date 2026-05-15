@@ -30,7 +30,7 @@ import dev.mel0n.service.MlnDownloaderService;
 public class MlnDownloaderEntity {
 
     private URI uri;
-    private String fileName;
+    private Path filePath;
     private Long length;
 
     @Builder.Default

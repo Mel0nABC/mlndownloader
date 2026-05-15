@@ -38,6 +38,7 @@ public class MlnDownloaderService {
     private final Long BYTE_TO_MBYTE = 1000000L;
     private final int SOME_BYTE = 1;
     private List<MlnDownloaderEntity> mlnDownloadList = new ArrayList<>();
+    private final Path DOWNLOAD_FOLDER = Path.of("/home/mel0n/Downloads/PROGRAMACION/mlnDownloader/downloads");
 
     /**
      * Send all download activity
@@ -57,7 +58,7 @@ public class MlnDownloaderService {
 
         URI uri = mlnDownloaderEntityDTO.uri();
         int chunks = mlnDownloaderEntityDTO.chunks();
-        String fileName = mlnDownloaderEntityDTO.fileName();
+        String filePath = DOWNLOAD_FOLDER + "/" + mlnDownloaderEntityDTO.fileName();
         Long length = 0L;
 
         try {
@@ -70,11 +71,11 @@ public class MlnDownloaderService {
 
             length = Long.parseLong(response.headers().map().get("content-length").getFirst());
 
-            checkNewDownloadExist(fileName, length);
+            checkNewDownloadExist(filePath, length);
 
             MlnDownloaderEntity mlnDownloaderEntity = MlnDownloaderEntity.builder()
                     .uri(uri)
-                    .fileName(fileName)
+                    .filePath(Path.of(filePath))
                     .length(length)
                     .chunks(chunks)
                     .build();
@@ -111,7 +112,7 @@ public class MlnDownloaderService {
 
                 Long finalEnd = (start + chunkSize) > length ? length : start + chunkSize - SOME_BYTE;
 
-                String partFileName = mlnDownloaderEntity.getFileName() + SUFIX + count;
+                String partFileName = mlnDownloaderEntity.getFilePath() + SUFIX + count;
 
                 this.downPartFile(mlnDownloaderEntity, finalStart, finalEnd, partFileName);
 
@@ -164,7 +165,7 @@ public class MlnDownloaderService {
 
             System.out.println("############################ Merge downloaded files ############################");
 
-            try (OutputStream out = Files.newOutputStream(Path.of(mlnDownloadEntity.getFileName()))) {
+            try (OutputStream out = Files.newOutputStream(mlnDownloadEntity.getFilePath())) {
 
                 for (Path part : mlnDownloadEntity.getParts().keySet()) {
 
@@ -200,7 +201,7 @@ public class MlnDownloaderService {
                 System.out.println("##############################################################################");
             }
 
-            if (Files.exists(Path.of(mlnDownloadEntity.getFileName()))) {
+            if (Files.exists(mlnDownloadEntity.getFilePath())) {
                 mlnDownloadEntity.setDownloading(false);
                 mlnDownloadEntity.setDownloaded(true);
             }
@@ -253,7 +254,8 @@ public class MlnDownloaderService {
      */
     public void deleteDownload(String fileName) {
 
-        Optional<MlnDownloaderEntity> mOptional = mlnDownloadList.stream().filter(m -> m.getFileName().equals(fileName))
+        Optional<MlnDownloaderEntity> mOptional = mlnDownloadList.stream()
+                .filter(m -> m.getFilePath().endsWith(fileName))
                 .findFirst();
 
         if (mOptional.isEmpty())
@@ -275,7 +277,7 @@ public class MlnDownloaderService {
                 System.out.println("DELETE PART: " + partToDelete);
             }
 
-            File file = new File(fileName);
+            File file = new File(DOWNLOAD_FOLDER + "/" + fileName);
 
             if (file.exists()) {
                 System.out.println("DELETE FILE: " + file);
@@ -293,7 +295,7 @@ public class MlnDownloaderService {
      * Clean downloaded files from memory
      */
     public void cleanFinishDownloads() {
-        this.mlnDownloadList = mlnDownloadList.stream().filter(m -> !m.isDownloaded()).toList();
+        this.mlnDownloadList = new ArrayList<>(mlnDownloadList.stream().filter(m -> !m.isDownloaded()).toList());
     }
 
     /**
@@ -303,11 +305,13 @@ public class MlnDownloaderService {
      */
     public void pauseOrResumeDownload(String fileName) {
 
-        if (Files.exists(Path.of(fileName)))
+        String filePath = DOWNLOAD_FOLDER + "/" + fileName;
+
+        if (Files.exists(Path.of(filePath)))
             throw new FileAlreadyDownloadederException("El archivo que quieres resumir ya está descargado");
 
         Optional<MlnDownloaderEntity> mOptional = mlnDownloadList.stream()
-                .filter(down -> down.getFileName().equals(fileName))
+                .filter(down -> down.getFilePath().endsWith(fileName))
                 .findFirst();
 
         if (mOptional.isEmpty())
@@ -379,7 +383,8 @@ public class MlnDownloaderService {
             throw new FileAlreadyDownloadederException("El archivo ya existe localmente");
         }
 
-        Optional<MlnDownloaderEntity> mOptional = mlnDownloadList.stream().filter(m -> m.getFileName().equals(fileName))
+        Optional<MlnDownloaderEntity> mOptional = mlnDownloadList.stream()
+                .filter(m -> m.getFilePath().endsWith(fileName))
                 .findFirst();
 
         if (!mOptional.isEmpty()) {
@@ -483,6 +488,14 @@ public class MlnDownloaderService {
         for (Thread t : mlnDownloaderEntity.getWorkers()) {
             t.interrupt();
         }
+    }
+
+    public List<MlnDownloaderEntity> getMlnDownloadList() {
+        return mlnDownloadList;
+    }
+
+    public void setMlnDownloadList(List<MlnDownloaderEntity> mlnDownloadList) {
+        this.mlnDownloadList = mlnDownloadList;
     }
 
 }
