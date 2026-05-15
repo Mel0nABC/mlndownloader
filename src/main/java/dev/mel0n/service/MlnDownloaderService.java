@@ -253,25 +253,25 @@ public class MlnDownloaderService {
      */
     public void deleteDownload(String fileName) {
 
-        File file = new File(fileName);
-
-        if (!file.exists())
-            throw new FileNotFoundException("El archivo que intenta eliminar no existe.");
-
-        pauseOrResumeDownload(fileName);
-
         Optional<MlnDownloaderEntity> mOptional = mlnDownloadList.stream().filter(m -> m.getFileName().equals(fileName))
                 .findFirst();
 
         if (mOptional.isEmpty())
             throw new FileNotFoundException("El archivo que intenta eliminar no está en la lista de descargas.");
 
-        mOptional.get().getParts().keySet().forEach(p -> {
+        MlnDownloaderEntity mlnDownloaderEntity = mOptional.get();
+
+        if (mlnDownloaderEntity.isDownloading())
+            pauseOrResumeDownload(fileName);
+
+        mlnDownloaderEntity.getParts().keySet().forEach(p -> {
 
             File partToDelete = new File(p.toString());
 
             if (partToDelete.exists())
                 partToDelete.delete();
+
+            File file = new File(fileName);
 
             if (file.exists())
                 file.delete();
@@ -281,6 +281,10 @@ public class MlnDownloaderService {
         mlnDownloadList.remove(mOptional.get());
 
         System.out.println(mlnDownloadList);
+
+    }
+
+    public void cleanFinishDownloads() {
 
     }
 
