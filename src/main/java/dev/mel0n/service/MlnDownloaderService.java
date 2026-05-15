@@ -303,6 +303,9 @@ public class MlnDownloaderService {
      */
     public void pauseOrResumeDownload(String fileName) {
 
+        if (Files.exists(Path.of(fileName)))
+            throw new FileAlreadyDownloadederException("El archivo que quieres resumir ya está descargado");
+
         Optional<MlnDownloaderEntity> mOptional = mlnDownloadList.stream()
                 .filter(down -> down.getFileName().equals(fileName))
                 .findFirst();
