@@ -129,6 +129,12 @@ public class MlnDownloaderService {
         }
     }
 
+    /**
+     * When all download parts are created, start all processos to download parts.
+     * Wait to finish download parts and merge now
+     * 
+     * @param mlnDownloaderEntity
+     */
     public void startDownloadControl(MlnDownloaderEntity mlnDownloaderEntity) {
         controlDownloaderSize(mlnDownloaderEntity);
         startSpeedControl(mlnDownloaderEntity);
@@ -240,6 +246,11 @@ public class MlnDownloaderService {
 
     }
 
+    /**
+     * Stop and delete actual download
+     * 
+     * @param fileName name for file to stop
+     */
     public void deleteDownload(String fileName) {
 
         File file = new File(fileName);
@@ -273,6 +284,11 @@ public class MlnDownloaderService {
 
     }
 
+    /**
+     * Pause or resume download with file name
+     * 
+     * @param fileName
+     */
     public void pauseOrResumeDownload(String fileName) {
 
         Optional<MlnDownloaderEntity> mOptional = mlnDownloadList.stream()
@@ -396,6 +412,11 @@ public class MlnDownloaderService {
 
     }
 
+    /**
+     * Update size from download file
+     * 
+     * @param mlnDownloadEntity
+     */
     public void controlDownloaderSize(MlnDownloaderEntity mlnDownloadEntity) {
 
         Thread threadSetDownloadedSize = new Thread(() -> {
@@ -422,6 +443,11 @@ public class MlnDownloaderService {
         mlnDownloadEntity.getWorkers().add(threadSetDownloadedSize);
     }
 
+    /**
+     * Start new thread to control download speed
+     * 
+     * @param mlnDownloadEntity
+     */
     public void startSpeedControl(MlnDownloaderEntity mlnDownloadEntity) {
         mlnDownloadEntity.getParts().keySet().forEach(p -> {
             Thread threadSpeed = new Thread(() -> {

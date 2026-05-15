@@ -49,7 +49,7 @@ public class MlnDownloaderController {
      * 
      * Delete download activity
      * 
-     * @param id Long to delete download activity
+     * @param fileName String file name to delete download activity
      * @return ResponseEntity with map, message value is a String text
      */
     @DeleteMapping("/downloads/{fileName}")
@@ -82,7 +82,7 @@ public class MlnDownloaderController {
      * 
      * To pause or resume download activity
      * 
-     * @param id Long from download activity
+     * @param fileName String from download file name
      * @return ResponseEntity with map, message value is a String text
      */
     @PutMapping("/downloads/{fileName}")
