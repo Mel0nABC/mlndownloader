@@ -3,13 +3,15 @@ package dev.mel0n.config;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.ObjectInputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import dev.mel0n.entity.MlnDownloaderEntity;
+import dev.mel0n.entity.MlnDownloaderDownloadFile;
 import dev.mel0n.service.MlnDownloaderService;
 
 @Configuration
@@ -26,17 +28,20 @@ public class ApplicationConfig {
                 try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(file))) {
 
                     @SuppressWarnings("unchecked")
-                    List<MlnDownloaderEntity> list = (List<MlnDownloaderEntity>) in.readObject();
+                    List<MlnDownloaderDownloadFile> list = (List<MlnDownloaderDownloadFile>) in.readObject();
 
                     mlnDownloaderService.setMlnDownloadList(list);
                 }
 
                 mlnDownloaderService.getMlnDownloadList().forEach(mln -> {
-                    System.out.println(mln.getFilePath());
+
+                    mln.setFileExist(Files.exists(Path.of(mln.getFilePath())));
+
+                    System.out.println(mln.getFilePath() + " - File exist: " + mln.isFileExist());
 
                     System.out.println("    PARTS: ");
-                    mln.getParts().keySet().forEach(p -> {
-                        System.out.println("        " + p);
+                    mln.getParts().forEach(p -> {
+                        System.out.println("        " + p.getPath());
                     });
                     System.out.println(
                             "-------------------------------------------------------------------------------------");

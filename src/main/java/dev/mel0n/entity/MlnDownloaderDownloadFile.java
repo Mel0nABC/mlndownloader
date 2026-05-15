@@ -4,9 +4,7 @@ import java.io.Serializable;
 import java.net.URI;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import lombok.AllArgsConstructor;
@@ -25,7 +23,7 @@ import java.nio.file.Path;
 @AllArgsConstructor
 @Getter
 @Setter
-public class MlnDownloaderEntity implements Serializable {
+public class MlnDownloaderDownloadFile implements Serializable {
 
     private URI uri;
     private String filePath;
@@ -35,7 +33,7 @@ public class MlnDownloaderEntity implements Serializable {
     private int chunks = 1;
 
     @Builder.Default
-    private Map<String, String> parts = new HashMap<>();
+    private List<MlnDownloaderPartFile> parts = new ArrayList<>();
 
     @Builder.Default
     private transient List<CompletableFuture<HttpResponse<Path>>> futures = new ArrayList<>();
@@ -47,8 +45,15 @@ public class MlnDownloaderEntity implements Serializable {
     private boolean isDownloaded = false;
 
     @Builder.Default
+    private boolean isMergin = false;
+
+    @Builder.Default
+    private boolean isFileExist = true;
+
+    @Builder.Default
     private Long downloadedBytes = 0L;
 
     @Builder.Default
     private transient List<Thread> workers = new ArrayList<>();
+
 }

@@ -74,7 +74,7 @@
           <release>${java.version}</release>
           <archive>
             <manifest>
-              <mainClass>com.ejemplo.Main</mainClass>
+              <mainClass>dev.mel0n.App</mainClass>
             </manifest>
           </archive>
         </configuration>

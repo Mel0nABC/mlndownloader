@@ -1,0 +1,24 @@
+package dev.mel0n.entity;
+
+import java.io.Serializable;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+@Setter
+public class MlnDownloaderPartFile implements Serializable {
+
+    private String path;
+    private Long length;
+    private Long actualSize;
+    private Long start;
+    private Long end;
+
+}
