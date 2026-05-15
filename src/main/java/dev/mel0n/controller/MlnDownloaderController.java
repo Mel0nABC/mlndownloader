@@ -34,18 +34,6 @@ public class MlnDownloaderController {
     }
 
     /**
-     * Obtain all download activity
-     * 
-     * @return ResponseEntity with map, message value List<MlnDownloaderEntity> with
-     *         all download activity
-     */
-    @GetMapping("/downloads")
-    public ResponseEntity<Map<String, Object>> getAllDownloads() {
-        return ResponseEntity
-                .ok(Map.of("success", true, "message", this.mlnDownloaderService.getAllDownloads()));
-    }
-
-    /**
      * 
      * Delete download activity
      * 

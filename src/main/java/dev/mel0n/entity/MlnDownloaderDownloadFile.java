@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import dev.mel0n.dto.MlnDownloaderDownloadFileDTO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -45,12 +46,26 @@ public class MlnDownloaderDownloadFile implements Serializable {
     private boolean isDownloaded = false;
 
     @Builder.Default
-    private boolean isFileExist = true;
+    private boolean isFileExist = false;
 
     @Builder.Default
     private Long downloadedBytes = 0L;
 
     @Builder.Default
     private transient List<Thread> workers = new ArrayList<>();
+
+    public MlnDownloaderDownloadFileDTO toDTO() {
+        return MlnDownloaderDownloadFileDTO.builder()
+                .uri(uri)
+                .filePath(filePath)
+                .length(length)
+                .chunks(chunks)
+                .parts(parts)
+                .isDownloading(isDownloading)
+                .isDownloaded(isDownloaded)
+                .isFileExist(isFileExist)
+                .downloadedBytes(downloadedBytes)
+                .build();
+    }
 
 }

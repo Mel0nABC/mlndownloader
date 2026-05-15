@@ -6,19 +6,21 @@
 Realizado:
 
 ✅ - descarga normal.
-✅- descarga multi chunks
+✅ - descarga multi chunks
 ✅ - pausar
 ✅ - resumen
 ✅ - cancelar descarga
 ✅ - Limpiar descargas finalizadas
-❌ - aportar checksum para finalizar comprobar.
-❌ - ajuste de velocidad máxima global
+❌ - Configurar websocket e enviar información al front desde el broker
+❌ - Comprobar espacio disponible antes de descargar, tener en cuenta el resto de archivos que se estén bajando
+❌ - Configurar directorio de descarga
+        Comprobar permiso de escritura.
+        Comprobar espacio disponible.
+❌ - Controlar el límite de concurrencia en los servidores.
+        -> Exception in thread "Thread-1" java.util.concurrent.CompletionException: java.io.IOException: too many concurrent streams
 ❌ - ajuste de velocidad por descarga individual.
-
-
-
-
-COSAS:
+❌ - ajuste de velocidad máxima global
+❌ - aportar checksum para finalizar comprobar.
 
 
 

@@ -46,15 +46,6 @@ public class MlnDownloaderService {
     private final Path DOWNLOAD_FOLDER = Path.of("/home/mel0n/Downloads/PROGRAMACION/mlnDownloader/downloads");
 
     /**
-     * Send all download activity
-     * 
-     * @return list from downloads information
-     */
-    public List<MlnDownloaderDownloadFile> getAllDownloads() {
-        return this.mlnDownloadList;
-    }
-
-    /**
      * To start new download
      * 
      * @param mlnDownloadderEntityDTO basic information to create new download
@@ -221,6 +212,7 @@ public class MlnDownloaderService {
             if (Files.exists(Path.of(mlnDownloadEntity.getFilePath()))) {
                 mlnDownloadEntity.setDownloading(false);
                 mlnDownloadEntity.setDownloaded(true);
+                mlnDownloadEntity.setFileExist(true);
                 mlnDownloadEntity.setDownloadedBytes(mlnDownloadEntity.getLength());
                 mlnDownloadEntity.getWorkers().clear();
                 mlnDownloadEntity.getFutures().clear();
@@ -353,7 +345,7 @@ public class MlnDownloaderService {
 
         MlnDownloaderDownloadFile mlnDownloaderEntity = mOptional.get();
 
-        if(mlnDownloaderEntity.isDownloaded())
+        if (mlnDownloaderEntity.isDownloaded())
             throw new FileAlreadyMerginException("No puedes cancelar ahora el fichero ya se ha descargado");
 
         if (mlnDownloaderEntity.isDownloading()) {
@@ -447,10 +439,11 @@ public class MlnDownloaderService {
     public void controlDownloaderSize(MlnDownloaderDownloadFile mlnDownloadEntity) {
 
         Thread threadSetDownloadedSize = new Thread(() -> {
+
             while (mlnDownloadEntity.isDownloading()) {
 
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(500);
                 } catch (InterruptedException e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
@@ -462,12 +455,15 @@ public class MlnDownloaderService {
 
                     File file = new File(p.getPath());
 
-                    if (file.exists())
+                    if (file.exists()) {
                         downloaderFilesSize.addAndGet(file.length());
-
+                        p.setActualSize(file.length());
+                    }
                 });
 
-                mlnDownloadEntity.setDownloadedBytes(downloaderFilesSize.get());
+                if (downloaderFilesSize.get() != 0L) {
+                    mlnDownloadEntity.setDownloadedBytes(downloaderFilesSize.get());
+                }
 
                 this.saveDownloadList();
             }
@@ -508,13 +504,6 @@ public class MlnDownloaderService {
 
         while (mlnDownloadEntity.isDownloading()) {
 
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-
             File file = new File(partFilename);
 
             if (file.exists()) {
@@ -528,6 +517,9 @@ public class MlnDownloaderService {
 
                     }
                     Long endSize = file.length();
+                    String info = "Down Speed " + partFilename + ": " + getByteToMbyte(endSize - startSize)
+                            + " mbytes/s\r";
+                    System.out.print(info);
                 }
 
             }
@@ -552,6 +544,11 @@ public class MlnDownloaderService {
 
     }
 
+    /**
+     * Send all download activity
+     * 
+     * @return list from downloads information
+     */
     public List<MlnDownloaderDownloadFile> getMlnDownloadList() {
         return mlnDownloadList;
     }
