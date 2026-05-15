@@ -284,8 +284,11 @@ public class MlnDownloaderService {
 
     }
 
+    /**
+     * Clean downloaded files from memory
+     */
     public void cleanFinishDownloads() {
-
+        this.mlnDownloadList = mlnDownloadList.stream().filter(m -> !m.isDownloaded()).toList();
     }
 
     /**

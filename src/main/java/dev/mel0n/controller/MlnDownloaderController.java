@@ -62,6 +62,20 @@ public class MlnDownloaderController {
     }
 
     /**
+     * To clean all finished downloads from memory list
+     * 
+     * @return ResponseEntity with map, message value is a String text
+     */
+    @DeleteMapping("/downloads")
+    public ResponseEntity<Map<String, Object>> cleanFinishDownloads() {
+
+        this.mlnDownloaderService.cleanFinishDownloads();
+
+        return ResponseEntity
+                .ok(Map.of("success", true, "message", "Se eliminaron las descargas finalizadas"));
+    }
+
+    /**
      * 
      * Create new download and start automatic
      * 

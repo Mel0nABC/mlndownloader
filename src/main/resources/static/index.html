@@ -69,8 +69,8 @@
                 download(urlInput.value, chucksInput.value, fileNameInput.value);
             })
 
-            const updateDownloads = document.querySelector("#updateDownloads");
-            updateDownloads.addEventListener("click", () => {
+            const updateDownloadsBtn = document.querySelector("#updateDownloadsBtn");
+            updateDownloadsBtn.addEventListener("click", () => {
                 console.log("UPDATE DOWNLOAD")
                 getAllDownloads();
             })
@@ -86,6 +86,12 @@
             pauseOrResumeBtn.addEventListener("click", () => {
                 console.log("PAUSE OR RESUME DOWNLOAD")
                 pauseOrResumeDownload();
+            })
+
+            const cleanBtn = document.querySelector("#cleanBtn");
+            cleanBtn.addEventListener("click", () => {
+                console.log("CLEAN FINISH DOWNLOADS")
+                cleanDownloads();
             })
 
         })
@@ -188,6 +194,26 @@
             }
         }
 
+        async function cleanDownloads() {
+            try {
+
+                const response = await fetch("/api/downloads", {
+                    method: "DELETE"
+                });
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    alert(data.message)
+                }
+
+                console.log("Respuesta:", data.message);
+
+            } catch (error) {
+                console.error("Error:", error);
+            }
+        }
+
 
 
 
@@ -196,7 +222,7 @@
 
 <body>
     <h1>MAIN WEB</h1>
-    <button id="updateDownloads">UPDATE</button>
+    <button id="updateDownloadsBtn">UPDATE</button>
     <br>
     <input type="text" id="urlInput">
     <input type="number" id="chucksInput">
@@ -207,6 +233,9 @@
 
     <br>
     <input type="text" id="pauseOrResumeInput"><button id="pauseOrResumeBtn">PAUSE OR RESUME</button>
+
+    <br>
+    <button id="cleanBtn">CLEAN DOWNLOADS</button>
 </body>
 
 </html>
