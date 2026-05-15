@@ -1,7 +1,9 @@
 package dev.mel0n.service;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -12,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -75,7 +78,7 @@ public class MlnDownloaderService {
 
             MlnDownloaderEntity mlnDownloaderEntity = MlnDownloaderEntity.builder()
                     .uri(uri)
-                    .filePath(Path.of(filePath))
+                    .filePath(filePath)
                     .length(length)
                     .chunks(chunks)
                     .build();
@@ -83,6 +86,8 @@ public class MlnDownloaderService {
             mlnDownloadList.add(mlnDownloaderEntity);
 
             startDownload(mlnDownloaderEntity);
+
+            saveDownloadList();
 
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
@@ -137,6 +142,7 @@ public class MlnDownloaderService {
      * @param mlnDownloaderEntity
      */
     public void startDownloadControl(MlnDownloaderEntity mlnDownloaderEntity) {
+
         controlDownloaderSize(mlnDownloaderEntity);
         startSpeedControl(mlnDownloaderEntity);
 
@@ -163,15 +169,19 @@ public class MlnDownloaderService {
 
             stopDownloadWorkers(mlnDownloadEntity);
 
+            mlnDownloadEntity.getParts().entrySet().stream().sorted(Comparator.comparingInt(path -> {
+                return Integer.parseInt(path.toString().split(MlnDownloaderService.SUFIX)[1]);
+            }));
+
             System.out.println("############################ Merge downloaded files ############################");
 
-            try (OutputStream out = Files.newOutputStream(mlnDownloadEntity.getFilePath())) {
+            try (OutputStream out = Files.newOutputStream(Path.of(mlnDownloadEntity.getFilePath()))) {
 
-                for (Path part : mlnDownloadEntity.getParts().keySet()) {
+                for (String part : mlnDownloadEntity.getParts().keySet()) {
 
                     System.out.println("MERGE: " + part);
 
-                    Files.copy(part, out);
+                    Files.copy(Path.of(part), out);
 
                 }
             }
@@ -186,9 +196,9 @@ public class MlnDownloaderService {
 
                 System.out.println("######################## Delete downloaded temp files ########################");
 
-                for (Path part : mlnDownloadEntity.getParts().keySet()) {
+                for (String part : mlnDownloadEntity.getParts().keySet()) {
 
-                    File file = new File(part.toString());
+                    File file = new File(part);
 
                     if (file.exists())
                         file.delete();
@@ -201,10 +211,14 @@ public class MlnDownloaderService {
                 System.out.println("##############################################################################");
             }
 
-            if (Files.exists(mlnDownloadEntity.getFilePath())) {
+            if (Files.exists(Path.of(mlnDownloadEntity.getFilePath()))) {
                 mlnDownloadEntity.setDownloading(false);
                 mlnDownloadEntity.setDownloaded(true);
+                mlnDownloadEntity.setDownloadedBytes(mlnDownloadEntity.getLength());
+                mlnDownloadEntity.getWorkers().clear();
             }
+
+            saveDownloadList();
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -221,10 +235,8 @@ public class MlnDownloaderService {
      */
     public void downPartFile(MlnDownloaderEntity mlnDownloadEntity, Long start, Long end, String partFileName) {
 
-        File partFile = new File(partFileName);
-
-        if (mlnDownloadEntity.getParts().get(partFile.toPath()) == null) {
-            mlnDownloadEntity.getParts().put(partFile.toPath(), start + "-" + end);
+        if (mlnDownloadEntity.getParts().get(partFileName) == null) {
+            mlnDownloadEntity.getParts().put(partFileName, start + "-" + end);
         }
 
         HttpRequest requestFile = HttpRequest.newBuilder()
@@ -236,14 +248,14 @@ public class MlnDownloaderService {
         CompletableFuture<HttpResponse<Path>> future = client.sendAsync(
                 requestFile,
                 HttpResponse.BodyHandlers.ofFile(
-                        partFile.toPath(),
+                        Path.of(partFileName),
                         StandardOpenOption.CREATE,
                         StandardOpenOption.WRITE,
                         StandardOpenOption.APPEND));
 
         mlnDownloadEntity.getFutures().add(future);
 
-        System.out.println("DOWNLOAD: " + partFile + " - " + "Range bytes=" + start + "-" + end);
+        System.out.println("DOWNLOAD: " + partFileName + " - " + "Range bytes=" + start + "-" + end);
 
     }
 
@@ -289,6 +301,8 @@ public class MlnDownloaderService {
         System.out.println("##############################################################");
 
         mlnDownloadList.remove(mOptional.get());
+
+        saveDownloadList();
     }
 
     /**
@@ -296,6 +310,8 @@ public class MlnDownloaderService {
      */
     public void cleanFinishDownloads() {
         this.mlnDownloadList = new ArrayList<>(mlnDownloadList.stream().filter(m -> !m.isDownloaded()).toList());
+        saveDownloadList();
+        System.out.println("######################## CLEANED FINISH DOWNLOADS ########################");
     }
 
     /**
@@ -340,6 +356,8 @@ public class MlnDownloaderService {
 
             mlnDownloaderEntity.getFutures().clear();
 
+            saveDownloadList();
+
             return;
         }
 
@@ -365,6 +383,8 @@ public class MlnDownloaderService {
         mlnDownloaderEntity.setDownloading(true);
 
         startDownloadControl(mlnDownloaderEntity);
+
+        saveDownloadList();
 
         System.out.println("##################################################################################");
     }
@@ -454,6 +474,8 @@ public class MlnDownloaderService {
                 });
 
                 mlnDownloadEntity.setDownloadedBytes(downloaderFilesSize.get());
+
+                this.saveDownloadList();
             }
 
         });
@@ -490,12 +512,33 @@ public class MlnDownloaderService {
         }
     }
 
+    /**
+     * To save list files information
+     */
+    public void saveDownloadList() {
+
+        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream("data.bin"))) {
+
+            out.writeObject(this.mlnDownloadList);
+
+        } catch (java.io.FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
     public List<MlnDownloaderEntity> getMlnDownloadList() {
         return mlnDownloadList;
     }
 
     public void setMlnDownloadList(List<MlnDownloaderEntity> mlnDownloadList) {
         this.mlnDownloadList = mlnDownloadList;
+    }
+
+    public Path getDOWNLOAD_FOLDER() {
+        return DOWNLOAD_FOLDER;
     }
 
 }

@@ -1,0 +1,53 @@
+package dev.mel0n.config;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.ObjectInputStream;
+import java.util.List;
+
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import dev.mel0n.entity.MlnDownloaderEntity;
+import dev.mel0n.service.MlnDownloaderService;
+
+@Configuration
+public class ApplicationConfig {
+
+    @Bean
+    public CommandLineRunner runner(MlnDownloaderService mlnDownloaderService) {
+        return args -> {
+            System.out.println("################################# Loading data #################################");
+
+            File file = new File("data.bin");
+
+            if (file.exists()) {
+                try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(file))) {
+
+                    @SuppressWarnings("unchecked")
+                    List<MlnDownloaderEntity> list = (List<MlnDownloaderEntity>) in.readObject();
+
+                    mlnDownloaderService.setMlnDownloadList(list);
+                }
+
+                mlnDownloaderService.getMlnDownloadList().forEach(mln -> {
+                    System.out.println(mln.getFilePath());
+
+                    System.out.println("    PARTS: ");
+                    mln.getParts().keySet().forEach(p -> {
+                        System.out.println("        " + p);
+                    });
+                    System.out.println(
+                            "-------------------------------------------------------------------------------------");
+
+                });
+            } else {
+                System.out.println("No hay un fichero data.bin para cargar");
+            }
+
+            System.out.println("################################################################################");
+
+        };
+    }
+}
