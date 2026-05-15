@@ -264,24 +264,29 @@ public class MlnDownloaderService {
         if (mlnDownloaderEntity.isDownloading())
             pauseOrResumeDownload(fileName);
 
+        System.out.println("######################## Delete files ########################");
+
         mlnDownloaderEntity.getParts().keySet().forEach(p -> {
 
             File partToDelete = new File(p.toString());
 
-            if (partToDelete.exists())
+            if (partToDelete.exists()) {
                 partToDelete.delete();
+                System.out.println("DELETE PART: " + partToDelete);
+            }
 
             File file = new File(fileName);
 
-            if (file.exists())
+            if (file.exists()) {
+                System.out.println("DELETE FILE: " + file);
                 file.delete();
+            }
 
         });
 
+        System.out.println("##############################################################");
+
         mlnDownloadList.remove(mOptional.get());
-
-        System.out.println(mlnDownloadList);
-
     }
 
     /**
