@@ -1,3 +1,6 @@
+/* SPDX-FileCopyrightText: 2025 Mel0nABC
+
+ SPDX-License-Identifier: MIT */
 import { deleteDownloaded, pauseOrResumeDownload } from "./mlnDownloaderFetch.js";
 
 let downloads = new Map();

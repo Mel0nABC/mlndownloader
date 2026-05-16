@@ -1,3 +1,6 @@
+/* SPDX-FileCopyrightText: 2025 Mel0nABC
+
+ SPDX-License-Identifier: MIT */
 package dev.mel0n.controller;
 
 import java.util.Map;
