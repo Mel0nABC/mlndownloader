@@ -20,21 +20,21 @@ stompClient.onConnect = (frame) => {
 
         const downloadsContainer = document.querySelector("#downloadsContainer");
 
+
         if (Array.isArray(data) && data.length === 0) {
             downloadsContainer.innerHTML = "";
             downloads = new Map();
         }
 
 
-        // const ids = new Set(data.map(x => x.id));
+        const ids = new Set(data.map(x => `download_${x.id}`));
 
-        // for (const key of downloads.keys()) {
-        //     if (!ids.has(key)) {
-        //         downloads.delete(key);
-        //         console.log("ELIMINAMOS")
-        //         console.log(key)
-        //     }
-        // }
+        for (const key of downloads.keys()) {
+            if (!ids.has(key)) {
+                downloads.delete(key);
+                document.querySelector(`#${key}`).remove();
+            }
+        }
 
 
         data.forEach((download, index) => {
@@ -56,14 +56,13 @@ stompClient.onConnect = (frame) => {
 
 
                 actionBtn.addEventListener("click", (e) => {
-                    const id = e.target.dataset.file.split("_")[1];
-                    console.log(id)
+                    const btn = e.target;
+                    const id = btn.dataset.file.split("_")[1];
                     pauseOrResumeDownload(id)
                 })
 
                 delBtn.addEventListener("click", (e) => {
                     const id = e.target.dataset.file.split("_")[1];
-                    console.log(id)
                     deleteDownloaded(id, downloads)
                 })
             }
@@ -74,6 +73,24 @@ stompClient.onConnect = (frame) => {
 };
 
 function updateCard(download) {
+
+    const actionBtn = document.querySelector(`[data-file="actionBtn_${download.id}"]`)
+    const delBtn = document.querySelector(`[data-file="delBtn_${download.id}"]`)
+
+    if (download.isDownloading & !download.isDownloaded) {
+        actionBtn.innerHTML = "Pause";
+    } else {
+        actionBtn.innerHTML = "Resume";
+    }
+
+    if (download.isDownloaded) {
+        actionBtn.disabled = true;
+        delBtn.disabled = true;
+    } else {
+        actionBtn.disabled = false;
+        delBtn.disabled = false;
+    }
+
 
     const downloadedBytes = document.querySelector(`[data-file="downloadedBytes_${download.id}"]`);
 
@@ -191,12 +208,7 @@ function createDownloadCard(download, index) {
                     <button
                         class="btn btn-danger btn-sm py-1 px-3 cancel-btn"
                         data-index="${index}"
-                        data-file="delBtn_${download.id}">
-
-                        Cancel
-
-                    </button>
-
+                        data-file="delBtn_${download.id}">Delete</button>
                 </div>
 
             </div>
