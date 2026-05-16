@@ -1,6 +1,10 @@
+<!-- SPDX-FileCopyrightText: 2025 Mel0nABC
+
+ SPDX-License-Identifier: MIT -->
+
 # MlnDownloader - Multi Thread Downloader (Java)
 
-Proyecto educativo en Java para aprender cómo implementar un **gestor de descargas multihilo**, utilizando HTTP Range, procesamiento concurrente y verificación de integridad de archivos.
+Proyecto en Java **gestor de descargas multihilo**, utilizando HTTP Range, procesamiento concurrente y verificación de integridad de archivos.
 
 ---
 
@@ -42,53 +46,38 @@ archivo_PART_2
 
 ## ⚙️ Tecnologías usadas
 
-- Java 11+ (`HttpClient`)
+- Java 21+ (`HttpClient`)
 - Threads nativos (`Thread`)
 - Java NIO (`Files`, `Path`)
-- Apache Commons Codec (SHA-256)
-- ProcessBuilder (integración con comandos del sistema)
+- Spring Boot
+- Spring Web
+- Spring Web Socket
+- Lombok
 
 ---
 
-## 🧠 Conceptos aplicados
+## ⚙️ Requisitos
 
-- Programación concurrente
-- Descargas HTTP con `Range`
-- Gestión de streams en Java
-- Manipulación de archivos con NIO
-- Procesamiento de checksum
-- Ejecución de procesos del sistema operativo
-
----
+- Java JDK 21 o superior
+- Apache Maven 3.9.15 o superior
+- Spring Boot 3.x
+- Git
+- Sistema operativo Linux, Windows o macOS
+- Conexión a internet para descargar dependencias Maven
 
 ## ▶️ Ejecución
 
 Compilar:
 
 ```bash
-javac dev/mel0n/App.java
+mvn clean install
 ```
+
 
 Ejecutar:
 
 ```bash
-java dev.mel0n.App
-```
-
----
-
-## 📥 Uso
-
-Al iniciar el programa:
-
-```
-Por favor, indica el link para descargar:
-```
-
-Ejemplo:
-
-```
-https://example.com/archivo.iso
+mvn spring-boot:run
 ```
 
 ---
@@ -103,35 +92,8 @@ https://example.com/archivo.iso
 
 ---
 
-## 🔐 Verificación de integridad
-
-### Apache Commons Codec
-
-```java
-DigestUtils.sha256Hex(InputStream)
-```
-
-### Linux
-
-```bash
-sha256sum -c sha256sums.txt
-```
-
----
-
 ## ⚠️ Limitaciones
 
 - No incluye reintentos automáticos
 - Depende de soporte HTTP Range del servidor
 - No optimizado para producción
-
----
-
-## 📚 Objetivo
-
-Proyecto educativo para aprender:
-
-- Concurrencia en Java
-- Descarga paralela de archivos
-- HTTP avanzado
-- Manejo de streams y archivos
