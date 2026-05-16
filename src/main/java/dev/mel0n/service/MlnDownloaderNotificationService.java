@@ -21,11 +21,7 @@ public class MlnDownloaderNotificationService {
     }
 
     public void sendFiles(List<MlnDownloaderDownloadFileDTO> list) {
-        template.convertAndSend("/api/speed", list);
-    }
-
-    public void sendSpeed(String information) {
-        template.convertAndSend("/api/speed", information);
+        template.convertAndSend("/api/downloads", list);
     }
 
     public void starNotificationThread(MlnDownloaderService mlnDownloaderService) {

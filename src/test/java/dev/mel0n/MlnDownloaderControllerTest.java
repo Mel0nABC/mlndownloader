@@ -21,7 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 
 import tools.jackson.databind.ObjectMapper;
 
-import dev.mel0n.dto.MlnDownloadderEntityDTO;
+import dev.mel0n.dto.MlnDownloadderNewEntityDTO;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -69,7 +69,7 @@ public class MlnDownloaderControllerTest {
 
         try {
 
-            MlnDownloadderEntityDTO mlnDownloadderEntityDTO = MlnDownloadderEntityDTO.builder()
+            MlnDownloadderNewEntityDTO mlnDownloadderEntityDTO = MlnDownloadderNewEntityDTO.builder()
                     .uri(uri)
                     .chunks(10)
                     .build();
@@ -105,7 +105,7 @@ public class MlnDownloaderControllerTest {
 
             URI uri = new URI("https://es.mirrors.cicku.me/archlinux/iso/2026.05.01/archlinux-2026.05.01-x86_64.iso");
 
-            MlnDownloadderEntityDTO mlnDownloadderEntityDTO = MlnDownloadderEntityDTO.builder()
+            MlnDownloadderNewEntityDTO mlnDownloadderEntityDTO = MlnDownloadderNewEntityDTO.builder()
                     .uri(uri)
                     .chunks(10)
                     .build();

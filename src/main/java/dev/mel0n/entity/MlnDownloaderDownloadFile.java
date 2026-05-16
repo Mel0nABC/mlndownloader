@@ -15,6 +15,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.nio.file.Path;
+import java.util.UUID;
 
 /**
  * Class to save download activity
@@ -26,6 +27,8 @@ import java.nio.file.Path;
 @Setter
 public class MlnDownloaderDownloadFile implements Serializable {
 
+    @Builder.Default
+    private UUID id = UUID.randomUUID();
     private URI uri;
     private String filePath;
     private Long length;
@@ -51,11 +54,9 @@ public class MlnDownloaderDownloadFile implements Serializable {
     @Builder.Default
     private Long downloadedBytes = 0L;
 
-    @Builder.Default
-    private transient List<Thread> workers = new ArrayList<>();
-
     public MlnDownloaderDownloadFileDTO toDTO() {
         return MlnDownloaderDownloadFileDTO.builder()
+                .id(id)
                 .uri(uri)
                 .filePath(filePath)
                 .length(length)

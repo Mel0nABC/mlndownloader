@@ -8,7 +8,7 @@ import lombok.Builder;
  * DTO to create new download
  */
 @Builder
-public record MlnDownloadderEntityDTO(
+public record MlnDownloadderNewEntityDTO(
                 URI uri,
                 int chunks,
                 String fileName) {

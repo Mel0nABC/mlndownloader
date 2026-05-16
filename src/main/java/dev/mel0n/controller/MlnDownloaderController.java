@@ -1,6 +1,7 @@
 package dev.mel0n.controller;
 
 import java.util.Map;
+import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -12,7 +13,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import dev.mel0n.dto.MlnDownloadderEntityDTO;
+import dev.mel0n.dto.MlnDownloadderNewEntityDTO;
 import dev.mel0n.service.MlnDownloaderService;
 
 /**
@@ -40,10 +41,10 @@ public class MlnDownloaderController {
      * @param fileName String file name to delete download activity
      * @return ResponseEntity with map, message value is a String text
      */
-    @DeleteMapping("/downloads/{fileName}")
-    public ResponseEntity<Map<String, Object>> deleteDownloaded(@PathVariable String fileName) {
+    @DeleteMapping("/downloads/{id}")
+    public ResponseEntity<Map<String, Object>> deleteDownloaded(@PathVariable String id) {
 
-        this.mlnDownloaderService.deleteDownload(fileName);
+        this.mlnDownloaderService.deleteDownload(UUID.fromString(id));
 
         return ResponseEntity
                 .ok(Map.of("success", true, "message", "La descarga se elimino satisfactoriamente"));
@@ -72,7 +73,7 @@ public class MlnDownloaderController {
      */
     @PostMapping("/downloads")
     public ResponseEntity<Map<String, Object>> newDownload(
-            @RequestBody MlnDownloadderEntityDTO mlnDownloadderEntityDTO) {
+            @RequestBody MlnDownloadderNewEntityDTO mlnDownloadderEntityDTO) {
 
         this.mlnDownloaderService.newDownload(mlnDownloadderEntityDTO);
 
@@ -87,10 +88,10 @@ public class MlnDownloaderController {
      * @param fileName String from download file name
      * @return ResponseEntity with map, message value is a String text
      */
-    @PutMapping("/downloads/{fileName}")
-    public ResponseEntity<Map<String, Object>> pauseOrResumeDownload(@PathVariable String fileName) {
+    @PutMapping("/downloads/{id}")
+    public ResponseEntity<Map<String, Object>> pauseOrResumeDownload(@PathVariable String id) {
 
-        this.mlnDownloaderService.pauseOrResumeDownload(fileName);
+        this.mlnDownloaderService.pauseOrResumeDownload(UUID.fromString(id));
 
         return ResponseEntity.ok(Map.of("success", true, "message", "Descarga pausada"));
     }

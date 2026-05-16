@@ -1,5 +1,5 @@
-
 document.addEventListener("DOMContentLoaded", () => {
+
 
     const urlInput = document.querySelector("#urlInput");
     const chucksInput = document.querySelector("#chucksInput");
@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
     urlInput.value = url;
     chucksInput.value = 4;
     fileNameInput.value = file;
-    
+
     urlInput.addEventListener("change", () => {
         try {
             const url = new URL(urlInput.value);
@@ -93,14 +93,11 @@ async function download(urlInput, chucksInput, fileNameInput) {
 }
 
 
-async function deleteDownloaded() {
+export async function deleteDownloaded(id, downloads) {
     try {
 
-        const deleteInput = document.querySelector("#deleteInput").value;
 
-        console.log(deleteInput)
-
-        const response = await fetch("/api/downloads/" + deleteInput, {
+        const response = await fetch("/api/downloads/" + id, {
             method: "DELETE"
         });
 
@@ -118,14 +115,9 @@ async function deleteDownloaded() {
 }
 
 
-async function pauseOrResumeDownload() {
+export async function pauseOrResumeDownload(id) {
     try {
-
-        const fileName = document.querySelector("#pauseOrResumeInput").value;
-
-        console.log(fileName)
-
-        const response = await fetch("/api/downloads/" + fileName, {
+        const response = await fetch("/api/downloads/" + id, {
             method: "PUT"
         });
 

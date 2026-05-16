@@ -6,67 +6,104 @@
     <meta name='viewport' content='width=device-width, initial-scale=1'>
     <title>MlnDownloader</title>
 
-    <link rel="stylesheet" href="/assets/dist/css/bootstrap.min.css" />
-    <script src="/assets/js/color-modes.js"></script>
-    <script src="/assets/dist/js/bootstrap.bundle.min.js" class="astro-vvvwv3sm"></script>
+    <link rel="stylesheet" href="./assets/dist/css/bootstrap.min.css" />
+    <script src="./assets/js/color-modes.js"></script>
+    <script src="./assets/dist/js/bootstrap.bundle.min.js" class="astro-vvvwv3sm"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
-    <script src="/js/mlnDownloaderWebSocket.js"></script>
-    <script src="/js/mlnDownloaderFetch.js"></script>
-    <script src="/js/mlnDownloaderEffects.js"></script>
-    <link rel="stylesheet" href="/css/theme_selector.css" />
+    <script src="./js/mlnDownloaderWebSocket.js" type="module"></script>
+    <script src="./js/mlnDownloaderFetch.js" type="module"></script>
+    <script src="./js/mlnDownloaderEffects.js"></script>
+    <link rel="stylesheet" href="./css/theme_selector.css" />
 </head>
 
 <body class="d-none fade">
+    <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom sticky-top shadow-sm">
+        <div class="container py-2">
 
-    <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom sticky-top">
-        <div class="container-fluid container">
+            <!-- botón móvil -->
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarToggler"
                 aria-controls="navbarToggler" aria-expanded="false" aria-label="Toggle navigation">
+
                 <span class="navbar-toggler-icon"></span>
             </button>
 
-            <div class="collapse navbar-collapse align-items-center" id="navbarToggler">
+            <!-- contenido -->
+            <div class="collapse navbar-collapse" id="navbarToggler">
 
-                <div class="row w-50 mx-auto">
+                <div class="w-100">
 
-                    <div class="row mt-3">
+                    <!-- título -->
+                    <div class="row mb-3">
                         <div class="col">
-                            <label class="form-label" for="id">URL</label>
+                            <h4 class="fw-semibold mb-0">
+                                mlnDownloader
+                            </h4>
+
+                            <small class="text-body-secondary">
+                                Descarga archivos en múltiples fragmentos
+                            </small>
+                        </div>
+                    </div>
+
+                    <!-- formulario -->
+                    <div class="row g-3 align-items-end">
+
+                        <!-- URL -->
+                        <div class="col-12 col-lg-5">
+                            <label class="form-label small fw-semibold" for="urlInput">
+                                URL
+                            </label>
+
                             <input type="text" class="form-control form-control-sm" id="urlInput" name="urlInput"
                                 required placeholder="Introduce URL de descarga">
                         </div>
-                    </div>
 
-                    <div class="row mt-3">
-                        <div class="col">
+                        <!-- nombre archivo -->
+                        <div class="col-12 col-lg-4">
+                            <label class="form-label small fw-semibold" for="fileNameInput">
+                                Nombre del archivo
+                            </label>
 
-                            <label class="form-label" for="id">Nombre del archivo a guardar</label>
                             <input type="text" class="form-control form-control-sm" id="fileNameInput"
-                                name="fileNameInput" required>
+                                name="fileNameInput" required placeholder="archivo.iso">
                         </div>
-                    </div>
 
-                    <div class="row mt-3 mb-4">
-                        <div class="col">
-                            <label class="form-label" for="id">Fragmentos simultáneos</label>
+                        <!-- chunks -->
+                        <div class="col-6 col-lg-2">
+                            <label class="form-label small fw-semibold" for="chucksInput">
+                                Fragmentos
+                            </label>
+
                             <input type="number" class="form-control form-control-sm" id="chucksInput"
-                                name="chucksInput" required placeholder="Indica nº de fragmentos">
+                                name="chucksInput" required min="1" placeholder="8">
                         </div>
-                        <div class="col align-self-end text-center">
-                            <button class="btn btn-primary btn-sm" id="btn">DOWNLOAD</button>
+
+                        <!-- botón -->
+                        <div class="col-6 col-lg-1 d-grid">
+                            <button class="btn btn-primary btn-sm" id="btn">
+                                DOWNLOAD
+                            </button>
                         </div>
+
                     </div>
 
                 </div>
+
             </div>
+
         </div>
     </nav>
 
     <article id="mainArticle" class="container mt-5">
 
         <button class="btn btn-primary" id="cleanBtn">CLEAN DOWNLOADS</button>
-        <div id="files"></div>
+
+        <section class="container my-3">
+
+            <div id="downloadsContainer"></div>
+
+        </section>
 
     </article>
 
