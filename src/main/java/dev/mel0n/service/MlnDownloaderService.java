@@ -31,6 +31,7 @@ import dev.mel0n.exception.FileAlreadyDownloadederException;
 import dev.mel0n.exception.FileAlreadyInDownloadListException;
 import dev.mel0n.exception.FileAlreadyMerginException;
 import dev.mel0n.exception.FileNotFoundException;
+import dev.mel0n.exception.FileSizeException;
 
 /**
  * Multi thread download service
@@ -161,12 +162,6 @@ public class MlnDownloaderService {
             }
         }
 
-        if (!mlnDownloaderEntity.getLength().equals(checkFileSizeOnParts)) {
-            System.out.println("EL TAMAÑO TOTAL NO COINCIDE: LENGTH: " + mlnDownloaderEntity.getLength() + ", PARTS: "
-                    + checkFileSizeOnParts);
-            return;
-        }
-
         mlnDownloaderEntity.setDownloaded(true);
 
         new Thread(() -> {
@@ -239,6 +234,16 @@ public class MlnDownloaderService {
             }
 
             saveDownloadList();
+
+            Long checkFileSizeOnParts = Files.size(Path.of(mlnDownloadEntity.getFilePath()));
+
+            if (!mlnDownloadEntity.getLength().equals(checkFileSizeOnParts)) {
+                System.out.println(
+                        "EL TAMAÑO TOTAL NO COINCIDE: LENGTH: " + mlnDownloadEntity.getLength() + ", PARTS: "
+                                + checkFileSizeOnParts);
+                throw new FileSizeException("Posible archivo corrupto: Web ->" + mlnDownloadEntity.getLength()
+                        + " - Local -> " + checkFileSizeOnParts);
+            }
 
         } catch (IOException e) {
             e.printStackTrace();

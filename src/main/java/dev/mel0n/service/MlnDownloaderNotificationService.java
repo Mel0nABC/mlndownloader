@@ -27,13 +27,12 @@ public class MlnDownloaderNotificationService {
     public void starNotificationThread(MlnDownloaderService mlnDownloaderService) {
         while (true) {
             try {
-                Thread.sleep(1000);
+                Thread.sleep(500);
 
                 sendFiles(mlnDownloaderService.getMlnDownloadList().stream().map(MlnDownloaderDownloadFile::toDTO)
                         .toList());
 
             } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
                 e.printStackTrace();
             }
         }
