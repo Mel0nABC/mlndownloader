@@ -44,7 +44,7 @@ public class MlnDownloaderService {
     private final Long BYTE_TO_MBYTE = 1000000L;
     private final int SOME_BYTE = 1;
     private List<MlnDownloaderDownloadFile> mlnDownloadList = new ArrayList<>();
-    private final Path DOWNLOAD_FOLDER = Path.of("/home/mel0n/Downloads/PROGRAMACION/mlnDownloader/downloads");
+    private static final Path DOWNLOAD_FOLDER = Path.of("/home/mel0n/Downloads/PROGRAMACION/mlnDownloader/downloads");
 
     /**
      * To start new download
@@ -525,7 +525,7 @@ public class MlnDownloaderService {
         this.mlnDownloadList = mlnDownloadList;
     }
 
-    public Path getDOWNLOAD_FOLDER() {
+    public static Path getDOWNLOAD_FOLDER() {
         return DOWNLOAD_FOLDER;
     }
 

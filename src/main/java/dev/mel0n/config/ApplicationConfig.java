@@ -22,6 +22,11 @@ public class ApplicationConfig {
         return args -> {
             System.out.println("################################# Loading data #################################");
 
+            File folder = new File(MlnDownloaderService.getDOWNLOAD_FOLDER().toString());
+
+            if (!folder.exists())
+                folder.mkdir();
+
             File file = new File("data.bin");
 
             if (file.exists()) {
