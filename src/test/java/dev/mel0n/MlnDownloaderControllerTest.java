@@ -16,12 +16,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.*;
 
 import tools.jackson.databind.ObjectMapper;
 
 import dev.mel0n.dto.MlnDownloadderNewEntityDTO;
+import dev.mel0n.service.MlnDownloaderService;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -34,18 +37,28 @@ public class MlnDownloaderControllerTest {
     private ObjectMapper objectMapper;
 
     private URI uri;
-    private File file;
+    private File filePath, dataFile;
+    private String fileName;
 
     @BeforeEach
     public void setup() {
         try {
 
+            this.dataFile = new File("data.bin");
+
             this.uri = new URI("https://es.mirrors.cicku.me/archlinux/iso/2026.05.01/archlinux-2026.05.01-x86_64.iso");
 
             String path = uri.getPath();
-            String fileName = path.substring(path.lastIndexOf('/') + 1);
 
-            file = new File(fileName);
+            this.fileName = path.substring(path.lastIndexOf('/') + 1);
+
+            filePath = new File(MlnDownloaderService.getDOWNLOAD_FOLDER() + "/" + fileName);
+
+            if (this.filePath.exists())
+                this.filePath.delete();
+
+            if (this.dataFile.exists())
+                this.dataFile.delete();
 
         } catch (URISyntaxException e) {
             e.printStackTrace();
@@ -56,8 +69,11 @@ public class MlnDownloaderControllerTest {
     @AfterEach
     public void clean() {
 
-        if (file.exists())
-            file.delete();
+        if (this.filePath.exists())
+            this.filePath.delete();
+
+        if (this.dataFile.exists())
+            this.dataFile.delete();
     }
 
     /**
@@ -70,8 +86,9 @@ public class MlnDownloaderControllerTest {
         try {
 
             MlnDownloadderNewEntityDTO mlnDownloadderEntityDTO = MlnDownloadderNewEntityDTO.builder()
-                    .uri(uri)
+                    .uri(this.uri)
                     .chunks(10)
+                    .fileName(this.fileName)
                     .build();
 
             mockMvc.perform(post("/api/downloads")
@@ -80,11 +97,15 @@ public class MlnDownloaderControllerTest {
                     .andExpect(status().isOk())
                     .andDo(print());
 
-            while (!file.exists()) {
+            while (!filePath.exists()) {
+                System.out.println(filePath.exists());
                 Thread.sleep(1000);
             }
 
-            assertTrue(file.exists());
+            System.out.println(
+                    "################################################################################################################################################");
+
+            assertTrue(filePath.exists());
 
             // To delete parts
             Thread.sleep(2000);
@@ -103,11 +124,10 @@ public class MlnDownloaderControllerTest {
 
         try {
 
-            URI uri = new URI("https://es.mirrors.cicku.me/archlinux/iso/2026.05.01/archlinux-2026.05.01-x86_64.iso");
-
             MlnDownloadderNewEntityDTO mlnDownloadderEntityDTO = MlnDownloadderNewEntityDTO.builder()
-                    .uri(uri)
+                    .uri(this.uri)
                     .chunks(10)
+                    .fileName(this.fileName)
                     .build();
 
             mockMvc.perform(post("/api/downloads")
@@ -116,11 +136,11 @@ public class MlnDownloaderControllerTest {
                     .andExpect(status().isOk())
                     .andDo(print());
 
-            while (!file.exists()) {
+            while (!filePath.exists()) {
                 Thread.sleep(1000);
             }
 
-            assertTrue(file.exists());
+            assertTrue(filePath.exists());
 
             // To delete parts
             Thread.sleep(2000);
