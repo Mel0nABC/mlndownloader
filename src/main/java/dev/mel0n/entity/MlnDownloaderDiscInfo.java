@@ -3,10 +3,12 @@ package dev.mel0n.entity;
 import java.nio.file.Path;
 
 import lombok.Builder;
-import lombok.ToString;
+import lombok.Getter;
+import lombok.Setter;
 
 @Builder
-@ToString
+@Getter
+@Setter
 public class MlnDownloaderDiscInfo {
 
     private Path path;

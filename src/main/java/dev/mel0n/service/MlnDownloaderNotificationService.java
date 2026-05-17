@@ -1,6 +1,5 @@
 package dev.mel0n.service;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
@@ -11,6 +10,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import dev.mel0n.dto.MlnDownloaderDownloadFileDTO;
+import dev.mel0n.entity.MlnDownloaderDiscInfo;
 import dev.mel0n.entity.MlnDownloaderDownloadFile;
 
 /**
@@ -34,6 +34,7 @@ public class MlnDownloaderNotificationService {
      * @param mlnDownloaderService obtain list downloads
      */
     public void starNotificationThread(MlnDownloaderService mlnDownloaderService) {
+        
         while (true) {
             try {
                 Thread.sleep(500);
@@ -42,17 +43,21 @@ public class MlnDownloaderNotificationService {
                         .toList());
 
                 try {
-
                     Path path = MlnDownloaderService.getDOWNLOAD_FOLDER();
 
                     FileStore fileStore = Files.getFileStore(path);
 
-                    Long totalSpace = fileStore.getTotalSpace() / 1000 / 1000 / 1000;
-                    Long freeSpace = fileStore.getUsableSpace() / 1000 / 1000 / 1000;
+                    MlnDownloaderDiscInfo mlnDownloaderDiscInfo = MlnDownloaderDiscInfo.builder()
+                            .path(path)
+                            .totalSpace(fileStore.getTotalSpace())
+                            .freeSpace(fileStore.getUsableSpace())
+                            .isReadable(Files.isReadable(path))
+                            .isWritable(Files.isWritable(path))
+                            .isExecutable(Files.isExecutable(path))
+                            .build();
 
-                    sendDiscStatus(freeSpace + " / " + totalSpace + " GB");
+                    sendDiscStatus(mlnDownloaderDiscInfo);
                 } catch (IOException e) {
-                    // TODO Auto-generated catch block
                     e.printStackTrace();
                 }
 
@@ -76,8 +81,8 @@ public class MlnDownloaderNotificationService {
      * 
      * @param disc string with free and total space
      */
-    public void sendDiscStatus(String disc) {
-        template.convertAndSend("/topic/disc_info", disc);
+    public void sendDiscStatus(MlnDownloaderDiscInfo mlnDownloaderDiscInfo) {
+        template.convertAndSend("/topic/disc_info", mlnDownloaderDiscInfo);
     }
 
 }

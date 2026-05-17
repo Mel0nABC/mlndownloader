@@ -27,7 +27,12 @@ stompClient.onConnect = (frame) => {
     });
 
     stompClient.subscribe(`${SUBSCRIBE_PREFIX}/disc_info`, (jsonString) => {
-        document.querySelector(`[data-file="disc-info"]`).textContent = jsonString.body;
+
+        const discInfo = JSON.parse(jsonString.body)
+
+        const spaceInfo = `${getBytesToGB(discInfo.freeSpace)} / ${getBytesToGB(discInfo.totalSpace)} GB`;
+
+        document.querySelector(`[data-file="disc-info"]`).textContent = spaceInfo;
     });
 };
 
@@ -163,6 +168,10 @@ function updateCard(download) {
 
 function getBytesToMb(downloadedBytes) {
     return ((downloadedBytes) / 1000 / 1000).toFixed(2);
+}
+
+function getBytesToGB(downloadedBytes) {
+    return ((downloadedBytes) / 1000 / 1000 / 1000).toFixed(2);
 }
 
 stompClient.onWebSocketError = (error) => {
