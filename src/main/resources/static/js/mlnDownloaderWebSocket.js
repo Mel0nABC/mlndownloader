@@ -160,7 +160,7 @@ function updateCard(download) {
 
 
         html = `<div class="fw-semibold small text-primary" data-file="status_${download.id}">
-                Pendiente unir ficheros <button class="btn btn-primary" data-file="merge_${download.id}" style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .75rem;">UNIR</button>
+                Pendiente unir <button type="button" class="btn btn-warning ms-2" data-file="merge_${download.id}" style="--bs-btn-padding-y: .15rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .75rem;">UNIR</button>
             </div>`
 
         if (status.innerHTML !== html) {
@@ -170,7 +170,6 @@ function updateCard(download) {
             const mergeBtn = document.querySelector(`[data-file="merge_${download.id}"]`);
 
             if (mergeBtn !== null) {
-                console.log("DIFERENTE NULL")
                 mergeBtn.addEventListener("click", () => {
                     forceMerge(download.id);
                 })
@@ -181,14 +180,11 @@ function updateCard(download) {
                     mergeBtn.disabled = false;
                 }
             }
-
-
-
         }
 
         if (download.isMerging) {
             html = `<div class="fw-semibold small text-primary" data-file="status_${download.id}">
-                            Univiendo ficheros ...
+                            Uniendo ficheros
                         </div>`
 
             status.innerHTML = html;

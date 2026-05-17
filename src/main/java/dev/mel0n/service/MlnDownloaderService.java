@@ -8,6 +8,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -240,6 +241,53 @@ public class MlnDownloaderService {
      * @param mlnDownloaderEntity
      */
     public void startMergeFiles(MlnDownloaderDownloadFile mlnDownloaderEntity) {
+        try {
+
+            if (Files.exists(Path.of(mlnDownloaderEntity.getFilePath()))) {
+                if (Files.size(Path.of(mlnDownloaderEntity.getFilePath())) == mlnDownloaderEntity.getLength()) {
+                    throw new FileAlreadyExistsException(
+                            "El archivo de salida de la unión de partes ya existe y tiene el tamaño correcto");
+                } else {
+                    Files.delete(Path.of(mlnDownloaderEntity.getFilePath()));
+                }
+            }
+
+            mlnDownloaderEntity.setMerging(true);
+
+            if (!mlnDownloaderEntity.isDownloaded())
+                return;
+
+            Path destionatioFolder = Path.of(DOWNLOAD_FOLDER.toUri());
+
+            FileStore fileStore = Files.getFileStore(destionatioFolder);
+
+            mlnDownloaderEntity.setDownloadedBytes(mlnDownloaderEntity.getParts().stream()
+                    .mapToLong(p -> {
+                        long resultate = 0L;
+                        try {
+                            resultate = Files.size(Path.of(p.getPath()));
+                        } catch (IOException e) {
+                            // TODO: handle exception
+                        }
+                        return resultate;
+
+                    }).sum());
+
+            
+
+            if (fileStore.getUsableSpace() < mlnDownloaderEntity.getLength()) {
+                mlnDownloaderEntity.setMerging(false);
+                throw new StorageException("No hay suficiente espacio para realizar la unión de los ficheros");
+            }
+
+            mlnDownloaderEntity.getParts().stream().sorted(Comparator.comparingInt(path -> {
+                return Integer.parseInt(path.toString().split(MlnDownloaderService.SUFIX)[1]);
+            }));
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         new Thread(() -> {
             multipartMergeAndDelete(mlnDownloaderEntity);
         }).start();
@@ -253,38 +301,6 @@ public class MlnDownloaderService {
     public void multipartMergeAndDelete(MlnDownloaderDownloadFile mlnDownloadEntity) {
 
         try {
-
-            mlnDownloadEntity.setMerging(true);
-
-            if (!mlnDownloadEntity.isDownloaded())
-                return;
-
-            Path destionatioFolder = Path.of(DOWNLOAD_FOLDER.toUri());
-
-            FileStore fileStore = Files.getFileStore(destionatioFolder);
-
-            mlnDownloadEntity.setDownloadedBytes(mlnDownloadEntity.getParts().stream()
-                    .mapToLong(p -> {
-                        long resultate = 0L;
-                        try {
-                            resultate = Files.size(Path.of(p.getPath()));
-                        } catch (IOException e) {
-                            // TODO: handle exception
-                        }
-                        return resultate;
-
-                    }).sum());
-
-            if (fileStore.getUnallocatedSpace() < mlnDownloadEntity.getLength()) {
-                System.out.println(mlnDownloadEntity);
-                mlnDownloadEntity.setMerging(false);
-                throw new StorageException("No hay suficiente espacio para realizar el merge");
-            }
-
-            mlnDownloadEntity.getParts().stream().sorted(Comparator.comparingInt(path -> {
-                return Integer.parseInt(path.toString().split(MlnDownloaderService.SUFIX)[1]);
-            }));
-
             System.out.println("############################ Merge downloaded files ############################");
 
             try (OutputStream out = Files.newOutputStream(Path.of(mlnDownloadEntity.getFilePath()))) {
@@ -330,7 +346,8 @@ public class MlnDownloaderService {
                 mlnDownloadEntity.setFileExist(true);
                 mlnDownloadEntity.setMerget(true);
                 mlnDownloadEntity.setDownloadedBytes(mlnDownloadEntity.getLength());
-                mlnDownloadEntity.getFutures().clear();
+                if (mlnDownloadEntity.getFutures() != null)
+                    mlnDownloadEntity.getFutures().clear();
             } else {
 
                 mlnDownloadEntity.setFileExist(false);
@@ -349,10 +366,10 @@ public class MlnDownloaderService {
                 throw new FileSizeException("Posible archivo corrupto: Web ->" + mlnDownloadEntity.getLength()
                         + " - Local -> " + checkFileSizeOnParts);
             }
-
         } catch (IOException e) {
             e.printStackTrace();
         }
+
     }
 
     /**
@@ -467,7 +484,8 @@ public class MlnDownloaderService {
      * Clean downloaded files from memory
      */
     public void cleanFinishDownloads() {
-        this.mlnDownloadList = new ArrayList<>(mlnDownloadList.stream().filter(m -> !m.isDownloaded() || !m.isMerget()).toList());
+        this.mlnDownloadList = new ArrayList<>(
+                mlnDownloadList.stream().filter(m -> !m.isDownloaded() || !m.isMerget()).toList());
         saveDownloadList();
         System.out.println("######################## CLEANED FINISH DOWNLOADS ########################");
     }
@@ -727,5 +745,4 @@ public class MlnDownloaderService {
     public void setMlnDownloaderDiscInfo(MlnDownloaderDiscInfo mlnDownloaderDiscInfo) {
         this.mlnDownloaderDiscInfo = mlnDownloaderDiscInfo;
     }
-
 }
