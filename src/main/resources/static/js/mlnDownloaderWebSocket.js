@@ -41,7 +41,7 @@ stompClient.onConnect = (frame) => {
 
         if (!discInfo.spaceSuficient) {
             infoDiscDiv.classList.add("blink-bg-danger");
-            smallInfoText.innerHTML += `<br><span class="fw-bold">¡¡ DISCO LLENO TODAS LAS DESCARGAS PARADAS HASTA SOLUCIONARLO !!</span>`;
+            smallInfoText.innerHTML += `<br><span class="fw-bold">¡¡ NO HAY SUFICIENTE ESPACIO PARA DESCARGAR TODOS LOS ARCHIVOS, TODAS LAS DESCARGAS PARADAS HASTA SOLUCIONARLO !!</span>`;
         } else {
             infoDiscDiv.classList.remove("blink-bg-danger");
         }
@@ -146,10 +146,23 @@ function updateCard(download) {
 
     const status = document.querySelector(`[data-file="status_${download.id}"]`)
 
-    status.innerHTML =
-        `<div class="fw-semibold small ${download.isDownloaded ? 'text-success' : 'text-primary'}" data-file="status_${download.id}">
+
+    if (!download.isMerget && download.isDownloaded) {
+        const html = `<div class="fw-semibold small text-primary" data-file="status_${download.id}">
+                Pendiente unir ficheros <button class="btn btn-primary" style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .75rem;">UNIR</button>
+            </div>`
+
+        if (status.innerHTML !== html) {
+            console.log("CAMBIO CAMBIO")
+            status.innerHTML = html;
+        }
+    } else {
+        status.innerHTML =
+            `<div class="fw-semibold small ${download.isDownloaded ? 'text-success' : 'text-primary'}" data-file="status_${download.id}">
         ${download.isDownloaded ? 'Completed' : (download.isDownloading ? 'Downloading' : 'Paused')}
     </div>`
+
+    }
 
 
     const progressNodes = document.querySelectorAll(`[data-file="progress_${download.id}"]`)
@@ -184,8 +197,6 @@ function updateCard(download) {
             node.style.width = progressText;
         }
     });
-
-
 }
 
 function getBytesToMb(downloadedBytes) {

@@ -16,6 +16,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 import java.nio.file.Path;
 import java.util.UUID;
@@ -28,6 +29,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Getter
 @Setter
+@ToString
 public class MlnDownloaderDownloadFile implements Serializable {
 
     @Builder.Default
@@ -55,6 +57,9 @@ public class MlnDownloaderDownloadFile implements Serializable {
     private boolean isFileExist = false;
 
     @Builder.Default
+    private boolean isMerget = false;
+
+    @Builder.Default
     private Long downloadedBytes = 0L;
 
     public MlnDownloaderDownloadFileDTO toDTO() {
@@ -68,6 +73,7 @@ public class MlnDownloaderDownloadFile implements Serializable {
                 .isDownloading(isDownloading)
                 .isDownloaded(isDownloaded)
                 .isFileExist(isFileExist)
+                .isMerget(isMerget)
                 .downloadedBytes(downloadedBytes)
                 .build();
     }

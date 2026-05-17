@@ -24,6 +24,7 @@ public record MlnDownloaderDownloadFileDTO(
                 boolean isDownloading,
                 boolean isDownloaded,
                 boolean isFileExist,
+                boolean isMerget,
                 Long downloadedBytes) {
 
 }

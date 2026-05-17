@@ -234,6 +234,27 @@ public class MlnDownloaderService {
             if (!mlnDownloadEntity.isDownloaded())
                 return;
 
+            Path destionatioFolder = Path.of(DOWNLOAD_FOLDER.toUri());
+
+            FileStore fileStore = Files.getFileStore(destionatioFolder);
+
+            mlnDownloadEntity.setDownloadedBytes(mlnDownloadEntity.getParts().stream()
+                    .mapToLong(p -> {
+                        long resultate = 0L;
+                        try {
+                            resultate = Files.size(Path.of(p.getPath()));
+                        } catch (IOException e) {
+                            // TODO: handle exception
+                        }
+                        return resultate;
+
+                    }).sum());
+
+            if (fileStore.getUnallocatedSpace() < mlnDownloadEntity.getLength()) {
+                System.out.println(mlnDownloadEntity);
+                throw new StorageException("No hay suficiente espacio para realizar el merge");
+            }
+
             mlnDownloadEntity.getParts().stream().sorted(Comparator.comparingInt(path -> {
                 return Integer.parseInt(path.toString().split(MlnDownloaderService.SUFIX)[1]);
             }));
@@ -274,12 +295,19 @@ public class MlnDownloaderService {
                 System.out.println("##############################################################################");
             }
 
-            if (Files.exists(Path.of(mlnDownloadEntity.getFilePath()))) {
+            if (Files.exists(Path.of(mlnDownloadEntity.getFilePath()))
+                    && (Files.size(Path.of(mlnDownloadEntity.getFilePath())) == mlnDownloadEntity.getLength())) {
                 mlnDownloadEntity.setDownloading(false);
                 mlnDownloadEntity.setDownloaded(true);
                 mlnDownloadEntity.setFileExist(true);
+                mlnDownloadEntity.setMerget(true);
                 mlnDownloadEntity.setDownloadedBytes(mlnDownloadEntity.getLength());
                 mlnDownloadEntity.getFutures().clear();
+            } else {
+
+                mlnDownloadEntity.setFileExist(false);
+
+                Files.delete(Path.of(mlnDownloadEntity.getFilePath()));
             }
 
             saveDownloadList();

@@ -21,12 +21,14 @@ Realizado:
 
 ❌ - Validaciones en MERGE:
 
-        ❌ - Control si hay suficiente espacio para hacer merge
-        ❌ - Meter boolean en clase download para ver si se hizo el merge o no
+        ✅ - Control si hay suficiente espacio para hacer merge
+        ✅ - Meter boolean en clase download para ver si se hizo el merge o no
         ❌ - botón para realizar merge si quedó pendiente
         ❌ - status que avise que se está mergeando ficheros
+        ❌ - Validacion de chunks que el tamño sea correcto
 
-❌ - Control de chunks no descargados para forzar las bajadas si no se bajó antes del merge.
+❌ - Al reiniciar servidor, validar archivos, files y chunks
+
 ❌ - ajuste de velocidad por descarga individual.
 ❌ - ajuste de velocidad máxima global
 
