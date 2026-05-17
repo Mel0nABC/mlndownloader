@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: 2025 Mel0nABC
 
  SPDX-License-Identifier: MIT */
- 
+
 document.addEventListener("DOMContentLoaded", () => {
 
 
@@ -158,3 +158,23 @@ async function cleanDownloads() {
     }
 }
 
+
+export async function forceMerge(id) {
+    try {
+
+        const response = await fetch("/api/downloads/" + id, {
+            method: "POST"
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+            alert(data.message)
+        }
+
+        console.log("Respuesta:", data.message);
+
+    } catch (error) {
+        console.error("Error:", error);
+    }
+}

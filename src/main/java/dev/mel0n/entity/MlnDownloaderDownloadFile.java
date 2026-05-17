@@ -57,6 +57,9 @@ public class MlnDownloaderDownloadFile implements Serializable {
     private boolean isFileExist = false;
 
     @Builder.Default
+    private boolean isMerging = false;
+
+    @Builder.Default
     private boolean isMerget = false;
 
     @Builder.Default
@@ -73,6 +76,7 @@ public class MlnDownloaderDownloadFile implements Serializable {
                 .isDownloading(isDownloading)
                 .isDownloaded(isDownloaded)
                 .isFileExist(isFileExist)
+                .isMerging(isMerging)
                 .isMerget(isMerget)
                 .downloadedBytes(downloadedBytes)
                 .build();

@@ -215,11 +215,34 @@ public class MlnDownloaderService {
 
         mlnDownloaderEntity.setDownloaded(true);
 
+        startMergeFiles(mlnDownloaderEntity);
+
+        System.out.println("################################# FINISH MERGE FILES #################################");
+        System.out.println("FROM: " + mlnDownloaderEntity.getFilePath());
+    }
+
+    public void forceMergeFilesFromClient(UUID id) {
+
+        Optional<MlnDownloaderDownloadFile> mOptional = mlnDownloadList.stream().filter(mln -> mln.getId().equals(id))
+                .findFirst();
+
+        if (mOptional.isEmpty())
+            throw new FileNotFoundException("Error al forzar el merge del fichero solicitado");
+
+        MlnDownloaderDownloadFile mlnDownloaderDownloadFile = mOptional.get();
+
+        startMergeFiles(mlnDownloaderDownloadFile);
+    }
+
+    /**
+     * To start process to merge files
+     * 
+     * @param mlnDownloaderEntity
+     */
+    public void startMergeFiles(MlnDownloaderDownloadFile mlnDownloaderEntity) {
         new Thread(() -> {
             multipartMergeAndDelete(mlnDownloaderEntity);
         }).start();
-
-        System.out.println("FINISH DOWNLOAD AND MERGE");
     }
 
     /**
@@ -230,6 +253,8 @@ public class MlnDownloaderService {
     public void multipartMergeAndDelete(MlnDownloaderDownloadFile mlnDownloadEntity) {
 
         try {
+
+            mlnDownloadEntity.setMerging(true);
 
             if (!mlnDownloadEntity.isDownloaded())
                 return;
@@ -252,6 +277,7 @@ public class MlnDownloaderService {
 
             if (fileStore.getUnallocatedSpace() < mlnDownloadEntity.getLength()) {
                 System.out.println(mlnDownloadEntity);
+                mlnDownloadEntity.setMerging(false);
                 throw new StorageException("No hay suficiente espacio para realizar el merge");
             }
 
@@ -271,6 +297,8 @@ public class MlnDownloaderService {
 
                 }
             }
+
+            mlnDownloadEntity.setMerging(false);
 
             System.out.println("################################################################################");
 
@@ -439,7 +467,7 @@ public class MlnDownloaderService {
      * Clean downloaded files from memory
      */
     public void cleanFinishDownloads() {
-        this.mlnDownloadList = new ArrayList<>(mlnDownloadList.stream().filter(m -> !m.isDownloaded()).toList());
+        this.mlnDownloadList = new ArrayList<>(mlnDownloadList.stream().filter(m -> !m.isDownloaded() || !m.isMerget()).toList());
         saveDownloadList();
         System.out.println("######################## CLEANED FINISH DOWNLOADS ########################");
     }

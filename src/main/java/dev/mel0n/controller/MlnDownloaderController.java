@@ -97,4 +97,18 @@ public class MlnDownloaderController {
 
         return ResponseEntity.ok(Map.of("success", true, "message", "Descarga pausada"));
     }
+
+    /**
+     * When automatic merge have some error, client send new merge petition
+     * 
+     * @param id
+     * @return
+     */
+    @PostMapping("/downloads/{id}")
+    public ResponseEntity<Map<String, Object>> forceMergeFiles(@PathVariable String id) {
+
+        this.mlnDownloaderService.forceMergeFilesFromClient(UUID.fromString(id));
+
+        return ResponseEntity.ok(Map.of("success", true, "message", "Ficheros unidos satisfactoriamente"));
+    }
 }

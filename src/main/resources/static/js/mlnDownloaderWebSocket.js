@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: 2025 Mel0nABC
 
  SPDX-License-Identifier: MIT */
-import { deleteDownloaded, pauseOrResumeDownload } from "./mlnDownloaderFetch.js";
+import { deleteDownloaded, pauseOrResumeDownload, forceMerge } from "./mlnDownloaderFetch.js";
 
 let downloads = new Map();
 
@@ -23,42 +23,15 @@ stompClient.onConnect = (frame) => {
     console.log('Connected: ' + frame);
 
     stompClient.subscribe(`${SUBSCRIBE_PREFIX}/downloads`, (jsonString) => {
-        subcriptionDownload(jsonString);
+        subcriptionDownloads(jsonString);
     });
 
     stompClient.subscribe(`${SUBSCRIBE_PREFIX}/disc_info`, (jsonString) => {
-
-        const discInfo = JSON.parse(jsonString.body)
-
-        const spaceInfoString = `${getBytesToGB(discInfo.freeSpace)} / ${getBytesToGB(discInfo.totalSpace)} GB`;
-
-        const smallInfoText = document.querySelector(`[data-file="disc-info"]`);
-
-        smallInfoText.textContent = spaceInfoString;
-
-        const infoDiscDiv = document.querySelector("#infoDiscDiv");
-
-
-        if (!discInfo.spaceSuficient) {
-            infoDiscDiv.classList.add("blink-bg-danger");
-            smallInfoText.innerHTML += `<br><span class="fw-bold">¡¡ NO HAY SUFICIENTE ESPACIO PARA DESCARGAR TODOS LOS ARCHIVOS, TODAS LAS DESCARGAS PARADAS HASTA SOLUCIONARLO !!</span>`;
-        } else {
-            infoDiscDiv.classList.remove("blink-bg-danger");
-        }
-
-
-        if (discInfo.freeSpace < (discInfo.totalSpace * 0.1) && discInfo.freeSpace > (discInfo.totalSpace * 0.05)) {
-            infoDiscDiv.classList.add("blink-bg-warning");
-            smallInfoText.innerHTML += `<br><span class="fw-bold">¡¡ DISCO POR DEBAJO DE UN 10% DE SU CAPACIDAD !!</span>`;
-        } else if (discInfo.freeSpace < (discInfo.totalSpace * 0.05)) {
-            infoDiscDiv.classList.remove("blink-bg-warning");
-            infoDiscDiv.classList.add("blink-bg-danger");
-            smallInfoText.innerHTML += `<br><span class="fw-bold">¡¡ DISCO POR DEBAJO DE UN 5% DE SU CAPACIDAD !!</span>`;
-        }
+        subcriptionDiscInfo(jsonString);
     });
 };
 
-function subcriptionDownload(jsonString) {
+function subcriptionDownloads(jsonString) {
 
     const data = JSON.parse(jsonString.body);
 
@@ -99,6 +72,7 @@ function subcriptionDownload(jsonString) {
             const delBtn = document.querySelector(`[data-file="delBtn_${download.id}"]`);
 
 
+
             actionBtn.addEventListener("click", (e) => {
                 const btn = e.target;
                 const id = btn.dataset.file.split("_")[1];
@@ -112,6 +86,39 @@ function subcriptionDownload(jsonString) {
         }
     });
 
+}
+
+
+function subcriptionDiscInfo(jsonString) {
+
+    const discInfo = JSON.parse(jsonString.body)
+
+    const spaceInfoString = `${getBytesToGB(discInfo.freeSpace)} / ${getBytesToGB(discInfo.totalSpace)} GB`;
+
+    const smallInfoText = document.querySelector(`[data-file="disc-info"]`);
+
+    smallInfoText.textContent = spaceInfoString;
+
+    const infoDiscDiv = document.querySelector("#infoDiscDiv");
+
+
+    if (!discInfo.spaceSuficient) {
+        infoDiscDiv.classList.add("blink-bg-danger");
+        smallInfoText.innerHTML += `<br><span class="fw-bold">¡¡ NO HAY SUFICIENTE ESPACIO PARA DESCARGAR TODOS LOS ARCHIVOS, TODAS LAS DESCARGAS PARADAS HASTA SOLUCIONARLO !!</span>`;
+    } else {
+        infoDiscDiv.classList.remove("blink-bg-danger");
+        infoDiscDiv.classList.remove("blink-bg-warning");
+    }
+
+
+    if (discInfo.freeSpace < (discInfo.totalSpace * 0.1) && discInfo.freeSpace > (discInfo.totalSpace * 0.05)) {
+        infoDiscDiv.classList.add("blink-bg-warning");
+        smallInfoText.innerHTML += `<br><span class="fw-bold">¡¡ DISCO POR DEBAJO DE UN 10% DE SU CAPACIDAD !!</span>`;
+    } else if (discInfo.freeSpace < (discInfo.totalSpace * 0.05)) {
+        infoDiscDiv.classList.remove("blink-bg-warning");
+        infoDiscDiv.classList.add("blink-bg-danger");
+        smallInfoText.innerHTML += `<br><span class="fw-bold">¡¡ DISCO POR DEBAJO DE UN 5% DE SU CAPACIDAD !!</span>`;
+    }
 }
 
 function updateCard(download) {
@@ -146,23 +153,58 @@ function updateCard(download) {
 
     const status = document.querySelector(`[data-file="status_${download.id}"]`)
 
+    let html = "";
 
-    if (!download.isMerget && download.isDownloaded) {
-        const html = `<div class="fw-semibold small text-primary" data-file="status_${download.id}">
-                Pendiente unir ficheros <button class="btn btn-primary" style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .75rem;">UNIR</button>
+    if (!download.isMerget && download.isDownloaded && !download.isMerging) {
+
+
+
+        html = `<div class="fw-semibold small text-primary" data-file="status_${download.id}">
+                Pendiente unir ficheros <button class="btn btn-primary" data-file="merge_${download.id}" style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .75rem;">UNIR</button>
             </div>`
 
         if (status.innerHTML !== html) {
-            console.log("CAMBIO CAMBIO")
+
+            status.innerHTML = html;
+
+            const mergeBtn = document.querySelector(`[data-file="merge_${download.id}"]`);
+
+            if (mergeBtn !== null) {
+                console.log("DIFERENTE NULL")
+                mergeBtn.addEventListener("click", () => {
+                    forceMerge(download.id);
+                })
+
+                if (download.isMerget) {
+                    mergeBtn.disabled = true;
+                } else {
+                    mergeBtn.disabled = false;
+                }
+            }
+
+
+
+        }
+
+        if (download.isMerging) {
+            html = `<div class="fw-semibold small text-primary" data-file="status_${download.id}">
+                            Univiendo ficheros ...
+                        </div>`
+
             status.innerHTML = html;
         }
-    } else {
-        status.innerHTML =
-            `<div class="fw-semibold small ${download.isDownloaded ? 'text-success' : 'text-primary'}" data-file="status_${download.id}">
-        ${download.isDownloaded ? 'Completed' : (download.isDownloading ? 'Downloading' : 'Paused')}
-    </div>`
 
+    } else {
+        html =
+            `<div class="fw-semibold small ${download.isDownloaded ? 'text-success' : 'text-primary'}" data-file="status_${download.id}">
+                    ${download.isDownloaded ? 'Completed' : (download.isDownloading ? 'Downloading' : 'Paused')}
+            </div>`
+
+        status.innerHTML = html;
     }
+
+
+
 
 
     const progressNodes = document.querySelectorAll(`[data-file="progress_${download.id}"]`)
