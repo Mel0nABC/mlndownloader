@@ -1,6 +1,10 @@
 package dev.mel0n.service;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.FileStore;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -37,12 +41,20 @@ public class MlnDownloaderNotificationService {
                 sendFiles(mlnDownloaderService.getMlnDownloadList().stream().map(MlnDownloaderDownloadFile::toDTO)
                         .toList());
 
-                File f = new File("/home/mel0n/Downloads/PROGRAMACION/mlnDownloader/downloads");
+                try {
 
-                Long totalSpace = f.getTotalSpace() / 1000 / 1000 / 1000;
-                Long freeSpace = f.getFreeSpace() / 1000 / 1000 / 1000;
+                    Path path = MlnDownloaderService.getDOWNLOAD_FOLDER();
 
-                sendDiscStatus(freeSpace + " / " + totalSpace + " GB");
+                    FileStore fileStore = Files.getFileStore(path);
+
+                    Long totalSpace = fileStore.getTotalSpace() / 1000 / 1000 / 1000;
+                    Long freeSpace = fileStore.getUnallocatedSpace() / 1000 / 1000 / 1000;
+
+                    sendDiscStatus(freeSpace + " / " + totalSpace + " GB");
+                } catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
 
             } catch (InterruptedException e) {
                 e.printStackTrace();

@@ -16,6 +16,7 @@ Realizado:
 ❌ - Configurar directorio de descarga
         ❌ - Comprobar permiso de escritura.
         ❌ - Comprobar espacio disponible.
+        ❌ - Parar descargas si no va a haber espacio suficiente y avisar
         ✅ - Mostrar espacio libre
 ❌ - Control de chunks no descargados para forzar las bajadas si no se bajó antes del merge.
 ❌ - ajuste de velocidad por descarga individual.

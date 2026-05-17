@@ -1,6 +1,5 @@
 package dev.mel0n.service;
 
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -212,12 +211,10 @@ public class MlnDownloaderService {
 
                 for (MlnDownloaderPartFile part : mlnDownloadEntity.getParts()) {
 
-                    File file = new File(part.getPath());
+                    if (Files.exists(Path.of(part.getPath())))
+                        Files.delete(Path.of(part.getPath()));
 
-                    if (file.exists())
-                        file.delete();
-
-                    if (!file.exists())
+                    if (!Files.exists(Path.of(part.getPath())))
                         System.out.println("DELETE: " + part.getPath());
 
                 }
@@ -317,19 +314,42 @@ public class MlnDownloaderService {
 
         mlnDownloaderEntity.getParts().forEach(p -> {
 
-            File partToDelete = new File(p.getPath());
+            Path partToDelete = Path.of(p.getPath());
 
-            if (partToDelete.exists()) {
-                partToDelete.delete();
-                System.out.println("DELETE PART: " + partToDelete);
+            if (Files.exists(partToDelete)) {
+                try {
+                    Files.delete(partToDelete);
+                    System.out.println("DELETE PART: " + partToDelete);
+                } catch (IOException e) {
+                    System.out.println("ERROR TO DELETE PART: " + partToDelete);
+                }
+
             }
         });
 
-        File file = new File(mlnDownloaderEntity.getFilePath());
+        // File file = new File(mlnDownloaderEntity.getFilePath());
 
-        if (file.exists()) {
-            System.out.println("DELETE FILE: " + file);
-            file.delete();
+        // if (file.exists()) {
+        // System.out.println("DELETE FILE: " + file);
+        // file.delete();
+        // }
+
+        Path pathFile = Path.of(mlnDownloaderEntity.getFilePath());
+
+        if (Files.exists(pathFile)) {
+            try {
+                Files.delete(pathFile);
+
+                if (Files.exists(pathFile)) {
+                    System.out.println("ERROR TO DELETE FILE: " + pathFile);
+                } else {
+                    System.out.println("DELETE FILE: " + pathFile);
+                }
+
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
         }
 
         System.out.println("##############################################################");
@@ -402,14 +422,19 @@ public class MlnDownloaderService {
 
         for (MlnDownloaderPartFile p : mlnDownloaderEntity.getParts()) {
 
-            File fileSizeDownloaded = new File(p.getPath());
+            try {
+                Path fileSizeDownloadedPath = Path.of(p.getPath());
 
-            Long start = p.getStart();
-            Long finalStart = start + fileSizeDownloaded.length();
+                Long start = p.getStart();
+                Long finalStart = start + Files.size(fileSizeDownloadedPath);
 
-            this.downPartFile(mlnDownloaderEntity, finalStart, p.getEnd(), p.getPath());
+                this.downPartFile(mlnDownloaderEntity, finalStart, p.getEnd(), p.getPath());
 
-            System.out.println("RESUME DOWNLOAD -> " + p.getPath());
+                System.out.println("RESUME DOWNLOAD -> " + p.getPath());
+
+            } catch (IOException e) {
+                System.out.println("ERROR ON RESUME DOWNLOAD -> " + p.getPath());
+            }
 
         }
 
@@ -430,10 +455,15 @@ public class MlnDownloaderService {
      */
     public void checkNewDownloadExist(String fileName, Long length) {
 
-        File checkFile = new File(fileName);
+        Path checkFile = Path.of(fileName);
 
-        if (checkFile.exists() & (checkFile.length() == length)) {
-            throw new FileAlreadyDownloadederException("El archivo ya existe localmente");
+        try {
+            if (Files.exists(checkFile) & (Files.size(checkFile) == length)) {
+                throw new FileAlreadyDownloadederException("El archivo ya existe localmente");
+            }
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
         }
 
         Optional<MlnDownloaderDownloadFile> mOptional = mlnDownloadList.stream()
@@ -478,11 +508,15 @@ public class MlnDownloaderService {
 
                 mlnDownloadEntity.getParts().forEach(p -> {
 
-                    File file = new File(p.getPath());
+                    Path pathFile = Path.of(p.getPath());
 
-                    if (file.exists()) {
-                        downloaderFilesSize.addAndGet(file.length());
-                        p.setActualSize(file.length());
+                    if (Files.exists(pathFile)) {
+                        try {
+                            downloaderFilesSize.addAndGet(Files.size(pathFile));
+                            p.setActualSize(Files.size(pathFile));
+                        } catch (IOException e) {
+                            System.out.println("Error en la lectura de tamaño: " + e.getMessage());
+                        }
                     }
                 });
 
