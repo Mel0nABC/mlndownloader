@@ -218,6 +218,9 @@ function updateCard(download) {
 
         if (node.dataset.type === "bar") {
             node.style.width = progressText;
+
+            if (progress == 100)
+                node.classList.add("bg-success");
         }
     });
 
@@ -233,6 +236,13 @@ function updateCard(download) {
 
         if (node.dataset.type === "bar") {
             node.style.width = progressText;
+            if (progress == 100)
+                node.classList.add("bg-success");
+        } else {
+            if (progress == 100) {
+                node.classList.add("bg-success");
+                node.classList.remove("text-bg-primary")
+            }
         }
     });
 }
@@ -391,6 +401,7 @@ function createDownloadCard(download, index) {
                     style="height: 16px;">
 
                     <div class="progress-bar progress-bar-striped progress-bar-animated"
+                        name="progressbar_${download.id}"
                         role="progressbar"
                         style="width: ${progress}%"
                         data-file="progress_${download.id}"
@@ -429,7 +440,8 @@ function createDownloadCard(download, index) {
 
                         <div class="accordion-body p-0">
 
-                            ${download.parts.map((part, partIndex) => {
+                ${download.parts.map((part, partIndex) => {
+
 
         const partProgress =
             part.length > 0
@@ -438,44 +450,45 @@ function createDownloadCard(download, index) {
 
         return `
 
-                                <div class="border-bottom p-2">
+                            <div class="border-bottom p-2">
 
-                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
 
-                                        <div>
+                                    <div>
 
-                                            <div class="fw-semibold small">
-                                                PART_${partIndex}
-                                            </div>
-
-                                            <small class="text-body-secondary">
-                                                ${(part.length / 1000 / 1000).toFixed(2)} MB
-                                            </small>
-
+                                        <div class="fw-semibold small">
+                                            PART_${partIndex}
                                         </div>
 
-                                        <span class="badge text-bg-primary" data-file="partProgress_${download.id}" data-type="text">
-                                            ${partProgress}%
-                                        </span>
+                                        <small class="text-body-secondary">
+                                            ${(part.length / 1000 / 1000).toFixed(2)} MB
+                                        </small>
 
                                     </div>
 
-                                    <div class="progress"
-                                        style="height: 12px;">
+                                    <span class="badge text-bg-primary" data-file="partProgress_${download.id}" data-type="text">
+                                        ${partProgress}%
+                                    </span>
 
-                                        <div class="progress-bar"
-                                            role="progressbar"
-                                            style="width: ${partProgress}%"
-                                             data-file="partProgress_${download.id}"
-                                            data-type="bar">
+                                </div>
 
-                                        </div>
+                                <div class="progress"
+                                    style="height: 12px;">
+
+                                    <div class="progress-bar"
+                                        name="progressbar_${download.id}"
+                                        role="progressbar"
+                                        style="width: ${partProgress}%"
+                                        data-file="partProgress_${download.id}"
+                                        data-type="bar">
 
                                     </div>
 
                                 </div>
 
-                                `;
+                            </div>
+
+                            `;
     }).join('')}
 
                         </div>
