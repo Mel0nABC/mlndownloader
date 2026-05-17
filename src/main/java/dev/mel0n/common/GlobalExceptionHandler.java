@@ -3,6 +3,8 @@
  SPDX-License-Identifier: MIT */
 package dev.mel0n.common;
 
+import java.nio.file.AccessDeniedException;
+import java.nio.file.FileSystemException;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
@@ -14,6 +16,7 @@ import dev.mel0n.exception.FileAlreadyDownloadederException;
 import dev.mel0n.exception.FileAlreadyInDownloadListException;
 import dev.mel0n.exception.FileNotFoundException;
 import dev.mel0n.exception.MultipartMergeException;
+import dev.mel0n.exception.StorageException;
 import lombok.NoArgsConstructor;
 
 /**
@@ -68,6 +71,18 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(FileNotFoundException.class)
     public ResponseEntity<Map<String, Object>> fileNotFoundException(Exception e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("success", false, "message", e.getMessage()));
+    }
+
+    /**
+     * When file to download have some problem to download
+     * 
+     * @param e Exception
+     * @return ResponseEntity with map, message value is a String text
+     */
+    @ExceptionHandler(StorageException.class)
+    public ResponseEntity<Map<String, Object>> storageException(StorageException e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("success", false, "message", e.getMessage()));
     }
 

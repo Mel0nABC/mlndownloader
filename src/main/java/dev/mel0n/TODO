@@ -14,8 +14,8 @@ Realizado:
 ✅ - Configurar websocket e enviar información al front desde el broker
 ❌ - Comprobar espacio disponible antes de descargar, tener en cuenta el resto de archivos que se estén bajando
 ❌ - Configurar directorio de descarga
-        ❌ - Comprobar permiso de escritura.
-        ❌ - Comprobar espacio disponible.
+        ✅ - Comprobar permiso de escritura.
+        ✅ - Comprobar espacio disponible.
         ❌ - Parar descargas si no va a haber espacio suficiente y avisar
         ✅ - Mostrar espacio libre
 ❌ - Control de chunks no descargados para forzar las bajadas si no se bajó antes del merge.

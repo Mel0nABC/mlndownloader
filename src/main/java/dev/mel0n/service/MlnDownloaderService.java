@@ -8,7 +8,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-
+import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -31,6 +31,7 @@ import dev.mel0n.exception.FileAlreadyInDownloadListException;
 import dev.mel0n.exception.FileAlreadyMerginException;
 import dev.mel0n.exception.FileNotFoundException;
 import dev.mel0n.exception.FileSizeException;
+import dev.mel0n.exception.StorageException;
 
 /**
  * Multi thread download service
@@ -68,6 +69,8 @@ public class MlnDownloaderService {
 
             length = Long.parseLong(response.headers().map().get("content-length").getFirst());
 
+            checkWriteOptions(length, mlnDownloaderEntityDTO.fileName());
+
             checkNewDownloadExist(filePath, length);
 
             MlnDownloaderDownloadFile mlnDownloaderEntity = MlnDownloaderDownloadFile.builder()
@@ -86,6 +89,27 @@ public class MlnDownloaderService {
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
+
+    }
+
+    /**
+     * Validate if destination folder have space and permission to write download
+     * file
+     * 
+     * @param fileSize lenght file to download
+     * @param fileName name file to download
+     */
+    public void checkWriteOptions(Long fileSize, String fileName) throws IOException {
+
+        Path path = MlnDownloaderService.getDOWNLOAD_FOLDER();
+
+        FileStore fileStore = Files.getFileStore(path);
+
+        if (!Files.isWritable(path))
+            throw new StorageException("No tienes permiso de escritura en la ubicación: " + DOWNLOAD_FOLDER);
+
+        if (fileStore.getUsableSpace() < fileSize.longValue())
+            throw new StorageException("Espacio insuficiente para guardar el archivo: " + fileName);
 
     }
 
