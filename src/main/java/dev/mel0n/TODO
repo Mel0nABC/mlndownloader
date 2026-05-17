@@ -13,19 +13,19 @@ Realizado:
 ✅ - Limpiar descargas finalizadas
 ✅ - Configurar websocket e enviar información al front desde el broker
 ✅ - Comprobar espacio disponible antes de descargar, tener en cuenta el resto de archivos que se estén bajando
-❌ - Configurar directorio de descarga
+✅ - Configurar directorio de descarga
         ✅ - Comprobar permiso de escritura.
         ✅ - Comprobar espacio disponible.
         ✅ - Parar descargas si no va a haber espacio suficiente y avisar
         ✅ - Mostrar espacio libre
 
-❌ - Validaciones en MERGE:
+✅ - Validaciones en MERGE:
 
         ✅ - Control si hay suficiente espacio para hacer merge
         ✅ - Meter boolean en clase download para ver si se hizo el merge o no
-        ❌ - botón para realizar merge si quedó pendiente
-        ❌ - status que avise que se está mergeando ficheros
-        ❌ - Validacion de chunks que el tamño sea correcto
+        ✅ - botón para realizar merge si quedó pendiente
+        ✅ - status que avise que se está mergeando ficheros
+        ✅ - Validacion de chunks que el tamño sea correcto
 
 ❌ - Al reiniciar servidor, validar archivos, files y chunks
 

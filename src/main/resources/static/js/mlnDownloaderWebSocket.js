@@ -155,9 +155,7 @@ function updateCard(download) {
 
     let html = "";
 
-    if (!download.isMerget && download.isDownloaded && !download.isMerging) {
-
-
+    if (!download.isMerget && download.isDownloaded) {
 
         html = `<div class="fw-semibold small text-primary" data-file="status_${download.id}">
                 Pendiente unir <button type="button" class="btn btn-warning ms-2" data-file="merge_${download.id}" style="--bs-btn-padding-y: .15rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .75rem;">UNIR</button>
