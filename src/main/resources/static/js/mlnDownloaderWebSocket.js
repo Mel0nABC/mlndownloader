@@ -200,10 +200,8 @@ function updateCard(download) {
     }
 
 
-
-
-
     const progressNodes = document.querySelectorAll(`[data-file="progress_${download.id}"]`)
+
     const progress =
         download.length > 0
             ? Math.floor((download.downloadedBytes / download.length) * 100)
@@ -227,24 +225,24 @@ function updateCard(download) {
 
     const partProgressNodes = document.querySelectorAll(`[data-file="partProgress_${download.id}"]`)
 
+    download.parts.forEach(part => {
 
-    partProgressNodes.forEach(node => {
+        const partDiv = document.querySelector(`[data-file="partProgress_${part.path}"]`)
+        const spamProgress = document.querySelector(`[data-file="spamProgress_${part.path}"]`)
 
-        const progressText = `${progress}%`;
+        const progressText = `${Math.floor((part.actualSize / part.length) * 100)}%`;
 
-        node.textContent = progressText;
+        partDiv.textContent = progressText;
+        spamProgress.textContent = progressText;
 
-        if (node.dataset.type === "bar") {
-            node.style.width = progressText;
-            if (progress == 100)
-                node.classList.add("bg-success");
-        } else {
-            if (progress == 100) {
-                node.classList.add("bg-success");
-                node.classList.remove("text-bg-primary")
-            }
+
+        partDiv.style.width = progressText;
+        if (progress == 100) {
+            partDiv.classList.add("bg-success");
+            spamProgress.classList.add("bg-success");
         }
-    });
+
+    })
 }
 
 function getBytesToMb(downloadedBytes) {
@@ -401,7 +399,6 @@ function createDownloadCard(download, index) {
                     style="height: 16px;">
 
                     <div class="progress-bar progress-bar-striped progress-bar-animated"
-                        name="progressbar_${download.id}"
                         role="progressbar"
                         style="width: ${progress}%"
                         data-file="progress_${download.id}"
@@ -443,10 +440,7 @@ function createDownloadCard(download, index) {
                 ${download.parts.map((part, partIndex) => {
 
 
-        const partProgress =
-            part.length > 0
-                ? Math.floor((part.actualSize / part.length) * 100)
-                : 0;
+        const partProgress = 0;
 
         return `
 
@@ -466,7 +460,7 @@ function createDownloadCard(download, index) {
 
                                     </div>
 
-                                    <span class="badge text-bg-primary" data-file="partProgress_${download.id}" data-type="text">
+                                    <span class="badge text-bg-primary" data-file="spamProgress_${part.path}" data-type="text">
                                         ${partProgress}%
                                     </span>
 
@@ -476,11 +470,11 @@ function createDownloadCard(download, index) {
                                     style="height: 12px;">
 
                                     <div class="progress-bar"
-                                        name="progressbar_${download.id}"
                                         role="progressbar"
                                         style="width: ${partProgress}%"
-                                        data-file="partProgress_${download.id}"
+                                        data-file="partProgress_${part.path}"
                                         data-type="bar">
+
 
                                     </div>
 
