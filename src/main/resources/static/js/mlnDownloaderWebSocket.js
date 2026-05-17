@@ -14,66 +14,78 @@ const stompClient = new StompJs.Client({
     brokerURL: 'ws://localhost:8080/ws-connect'
 });
 
+const SUBSCRIBE_PREFIX = "/topic";
+
 stompClient.onConnect = (frame) => {
+
     setConnected(true);
+
     console.log('Connected: ' + frame);
-    stompClient.subscribe('/api/downloads', (jsonString) => {
 
-        const data = JSON.parse(jsonString.body);
+    stompClient.subscribe(`${SUBSCRIBE_PREFIX}/downloads`, (jsonString) => {
+        subcriptionDownload(jsonString);
+    });
 
-        const downloadsContainer = document.querySelector("#downloadsContainer");
-
-
-        if (Array.isArray(data) && data.length === 0) {
-            downloadsContainer.innerHTML = "";
-            downloads = new Map();
-        }
-
-
-        const ids = new Set(data.map(x => `download_${x.id}`));
-
-        for (const key of downloads.keys()) {
-            if (!ids.has(key)) {
-                downloads.delete(key);
-                document.querySelector(`#${key}`).remove();
-            }
-        }
-
-
-        data.forEach((download, index) => {
-
-            const downloadOnMap = downloads.get("download_" + download.id)
-
-            if (downloadOnMap) {
-                updateCard(download)
-            } else {
-                downloads.set("download_" + download.id, download);
-
-                downloadsContainer.insertAdjacentHTML(
-                    "beforeend",
-                    createDownloadCard(download, index)
-                );
-
-                const actionBtn = document.querySelector(`[data-file="actionBtn_${download.id}"]`);
-                const delBtn = document.querySelector(`[data-file="delBtn_${download.id}"]`);
-
-
-                actionBtn.addEventListener("click", (e) => {
-                    const btn = e.target;
-                    const id = btn.dataset.file.split("_")[1];
-                    pauseOrResumeDownload(id)
-                })
-
-                delBtn.addEventListener("click", (e) => {
-                    const id = e.target.dataset.file.split("_")[1];
-                    deleteDownloaded(id, downloads)
-                })
-            }
-        });
-
-
+    stompClient.subscribe(`${SUBSCRIBE_PREFIX}/disc_info`, (jsonString) => {
+        document.querySelector(`[data-file="disc-info"]`).textContent = jsonString.body;
     });
 };
+
+function subcriptionDownload(jsonString) {
+
+    const data = JSON.parse(jsonString.body);
+
+    const downloadsContainer = document.querySelector("#downloadsContainer");
+
+
+    if (Array.isArray(data) && data.length === 0) {
+        downloadsContainer.innerHTML = "";
+        downloads = new Map();
+    }
+
+
+    const ids = new Set(data.map(x => `download_${x.id}`));
+
+    for (const key of downloads.keys()) {
+        if (!ids.has(key)) {
+            downloads.delete(key);
+            document.querySelector(`#${key}`).remove();
+        }
+    }
+
+
+    data.forEach((download, index) => {
+
+        const downloadOnMap = downloads.get("download_" + download.id)
+
+        if (downloadOnMap) {
+            updateCard(download)
+        } else {
+            downloads.set("download_" + download.id, download);
+
+            downloadsContainer.insertAdjacentHTML(
+                "beforeend",
+                createDownloadCard(download, index)
+            );
+
+            const actionBtn = document.querySelector(`[data-file="actionBtn_${download.id}"]`);
+            const delBtn = document.querySelector(`[data-file="delBtn_${download.id}"]`);
+
+
+            actionBtn.addEventListener("click", (e) => {
+                const btn = e.target;
+                const id = btn.dataset.file.split("_")[1];
+                pauseOrResumeDownload(id)
+            })
+
+            delBtn.addEventListener("click", (e) => {
+                const id = e.target.dataset.file.split("_")[1];
+                deleteDownloaded(id, downloads)
+            })
+        }
+    });
+
+}
 
 function updateCard(download) {
 

@@ -11,15 +11,18 @@ Realizado:
 ✅ - resumen
 ✅ - cancelar descarga
 ✅ - Limpiar descargas finalizadas
-❌ - Configurar websocket e enviar información al front desde el broker
+✅ - Configurar websocket e enviar información al front desde el broker
 ❌ - Comprobar espacio disponible antes de descargar, tener en cuenta el resto de archivos que se estén bajando
 ❌ - Configurar directorio de descarga
-        Comprobar permiso de escritura.
-        Comprobar espacio disponible.
-❌ - Controlar el límite de concurrencia en los servidores.
-        -> Exception in thread "Thread-1" java.util.concurrent.CompletionException: java.io.IOException: too many concurrent streams
+        ❌ - Comprobar permiso de escritura.
+        ❌ - Comprobar espacio disponible.
+        ✅ - Mostrar espacio libre
+❌ - Control de chunks no descargados para forzar las bajadas si no se bajó antes del merge.
 ❌ - ajuste de velocidad por descarga individual.
 ❌ - ajuste de velocidad máxima global
+
+❌ - Controlar el límite de concurrencia en los servidores.
+        -> Exception in thread "Thread-1" java.util.concurrent.CompletionException: java.io.IOException: too many concurrent streams
 ❌ - aportar checksum para finalizar comprobar.
 
 
