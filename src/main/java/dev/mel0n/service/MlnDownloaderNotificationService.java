@@ -48,7 +48,7 @@ public class MlnDownloaderNotificationService {
                     FileStore fileStore = Files.getFileStore(path);
 
                     Long totalSpace = fileStore.getTotalSpace() / 1000 / 1000 / 1000;
-                    Long freeSpace = fileStore.getUnallocatedSpace() / 1000 / 1000 / 1000;
+                    Long freeSpace = fileStore.getUsableSpace() / 1000 / 1000 / 1000;
 
                     sendDiscStatus(freeSpace + " / " + totalSpace + " GB");
                 } catch (IOException e) {
