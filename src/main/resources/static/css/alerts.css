@@ -1,0 +1,23 @@
+@keyframes blink {
+
+    0%,
+    100% {
+        background-color: transparent;
+    }
+
+    50% {
+        background-color: var(--blink-color);
+    }
+}
+
+
+.blink-bg-danger {
+    animation: blink 1s infinite;
+    --blink-color: #dc3545;
+}
+
+
+.blink-bg-warning {
+    animation: blink 1s infinite;
+    --blink-color: #ffc107;
+}

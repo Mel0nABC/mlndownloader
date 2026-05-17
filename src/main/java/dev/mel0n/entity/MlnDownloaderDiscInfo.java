@@ -9,6 +9,9 @@ import lombok.Setter;
 @Builder
 @Getter
 @Setter
+/**
+ * Class to capture disc information
+ */
 public class MlnDownloaderDiscInfo {
 
     private Path path;
@@ -17,5 +20,6 @@ public class MlnDownloaderDiscInfo {
     private boolean isWritable;
     private boolean isReadable;
     private boolean isExecutable;
+    private boolean isSpaceSuficient;
 
 }

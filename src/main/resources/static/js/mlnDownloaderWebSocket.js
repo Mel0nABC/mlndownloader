@@ -30,9 +30,31 @@ stompClient.onConnect = (frame) => {
 
         const discInfo = JSON.parse(jsonString.body)
 
-        const spaceInfo = `${getBytesToGB(discInfo.freeSpace)} / ${getBytesToGB(discInfo.totalSpace)} GB`;
+        const spaceInfoString = `${getBytesToGB(discInfo.freeSpace)} / ${getBytesToGB(discInfo.totalSpace)} GB`;
 
-        document.querySelector(`[data-file="disc-info"]`).textContent = spaceInfo;
+        const smallInfoText = document.querySelector(`[data-file="disc-info"]`);
+
+        smallInfoText.textContent = spaceInfoString;
+
+        const infoDiscDiv = document.querySelector("#infoDiscDiv");
+
+
+        if (!discInfo.spaceSuficient) {
+            infoDiscDiv.classList.add("blink-bg-danger");
+            smallInfoText.innerHTML += `<br><span class="fw-bold">¡¡ DISCO LLENO TODAS LAS DESCARGAS PARADAS HASTA SOLUCIONARLO !!</span>`;
+        } else {
+            infoDiscDiv.classList.remove("blink-bg-danger");
+        }
+
+
+        if (discInfo.freeSpace < (discInfo.totalSpace * 0.1) && discInfo.freeSpace > (discInfo.totalSpace * 0.05)) {
+            infoDiscDiv.classList.add("blink-bg-warning");
+            smallInfoText.innerHTML += `<br><span class="fw-bold">¡¡ DISCO POR DEBAJO DE UN 10% DE SU CAPACIDAD !!</span>`;
+        } else if (discInfo.freeSpace < (discInfo.totalSpace * 0.05)) {
+            infoDiscDiv.classList.remove("blink-bg-warning");
+            infoDiscDiv.classList.add("blink-bg-danger");
+            smallInfoText.innerHTML += `<br><span class="fw-bold">¡¡ DISCO POR DEBAJO DE UN 5% DE SU CAPACIDAD !!</span>`;
+        }
     });
 };
 

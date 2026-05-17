@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartException;
 
 import dev.mel0n.dto.MlnDownloadderNewEntityDTO;
+import dev.mel0n.entity.MlnDownloaderDiscInfo;
 import dev.mel0n.entity.MlnDownloaderDownloadFile;
 import dev.mel0n.entity.MlnDownloaderPartFile;
 import dev.mel0n.exception.FileAlreadyDownloadederException;
@@ -46,6 +47,33 @@ public class MlnDownloaderService {
     private final int SOME_BYTE = 1;
     private List<MlnDownloaderDownloadFile> mlnDownloadList = new ArrayList<>();
     private static final Path DOWNLOAD_FOLDER = Path.of("/home/mel0n/Downloads/PROGRAMACION/mlnDownloader/downloads");
+    private MlnDownloaderDiscInfo mlnDownloaderDiscInfo;
+
+    public MlnDownloaderService() {
+
+        try {
+            Path path = MlnDownloaderService.getDOWNLOAD_FOLDER();
+
+            FileStore fileStore = Files.getFileStore(path);
+
+            long freeSpace = fileStore.getUsableSpace();
+
+            this.mlnDownloaderDiscInfo = MlnDownloaderDiscInfo.builder()
+                    .path(path)
+                    .totalSpace(fileStore.getTotalSpace())
+                    .freeSpace(freeSpace)
+                    .isReadable(Files.isReadable(path))
+                    .isWritable(Files.isWritable(path))
+                    .isExecutable(Files.isExecutable(path))
+                    .build();
+
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+        controlFreeSpaceToFinishDownloads(mlnDownloaderDiscInfo);
+    }
 
     /**
      * To start new download
@@ -163,7 +191,7 @@ public class MlnDownloaderService {
      */
     public void startDownloadControl(MlnDownloaderDownloadFile mlnDownloaderEntity) {
 
-        controlDownloaderSize(mlnDownloaderEntity);
+        setDownloadedPartSize(mlnDownloaderEntity);
 
         try {
             for (CompletableFuture<HttpResponse<Path>> t : mlnDownloaderEntity.getFutures()) {
@@ -351,13 +379,6 @@ public class MlnDownloaderService {
             }
         });
 
-        // File file = new File(mlnDownloaderEntity.getFilePath());
-
-        // if (file.exists()) {
-        // System.out.println("DELETE FILE: " + file);
-        // file.delete();
-        // }
-
         Path pathFile = Path.of(mlnDownloaderEntity.getFilePath());
 
         if (Files.exists(pathFile)) {
@@ -482,8 +503,9 @@ public class MlnDownloaderService {
         Path checkFile = Path.of(fileName);
 
         try {
-            if (Files.exists(checkFile) & (Files.size(checkFile) == length)) {
-                throw new FileAlreadyDownloadederException("El archivo ya existe localmente");
+            if (Files.exists(checkFile)) {
+                if ((Files.size(checkFile) == length))
+                    throw new FileAlreadyDownloadederException("El archivo ya existe localmente");
             }
         } catch (IOException e) {
             // TODO Auto-generated catch block
@@ -515,7 +537,7 @@ public class MlnDownloaderService {
      * 
      * @param mlnDownloadEntity
      */
-    public void controlDownloaderSize(MlnDownloaderDownloadFile mlnDownloadEntity) {
+    public void setDownloadedPartSize(MlnDownloaderDownloadFile mlnDownloadEntity) {
 
         new Thread(() -> {
 
@@ -554,8 +576,58 @@ public class MlnDownloaderService {
             System.out.println("STOP CONTROL DOWNLOAD SIZE: " + mlnDownloadEntity.getFilePath());
 
         }).start();
-        ;
+    }
 
+    /**
+     * Class to control free space, stop all downloads if don't have space to
+     * download all
+     * 
+     * @param mlnDownloaderDiscInfo object from main thread
+     */
+    public void controlFreeSpaceToFinishDownloads(MlnDownloaderDiscInfo mlnDownloaderDiscInfo) {
+
+        new Thread(() -> {
+
+            while (true) {
+                try {
+
+                    Thread.sleep(1000);
+
+                    Path path = MlnDownloaderService.getDOWNLOAD_FOLDER();
+
+                    FileStore fileStore = Files.getFileStore(path);
+
+                    long freeSpace = fileStore.getUsableSpace();
+
+                    mlnDownloaderDiscInfo.setTotalSpace(fileStore.getTotalSpace());
+                    mlnDownloaderDiscInfo.setFreeSpace(freeSpace);
+                    mlnDownloaderDiscInfo.setWritable(Files.isWritable(path));
+                    mlnDownloaderDiscInfo.setReadable(Files.isReadable(path));
+                    mlnDownloaderDiscInfo.setReadable(Files.isReadable(path));
+                    mlnDownloaderDiscInfo.setSpaceSuficient(true);
+
+                    Long allPartsSize = mlnDownloadList.stream().flatMap(mln -> mln.getParts().stream())
+                            .mapToLong(part -> part.getLength() - part.getActualSize()).sum();
+
+                    if (freeSpace < allPartsSize.longValue()) {
+
+                        mlnDownloaderDiscInfo.setSpaceSuficient(false);
+
+                        mlnDownloadList.forEach(mln -> {
+                            if (mln.isDownloading()) {
+                                pauseOrResumeDownload(mln.getId());
+                            }
+                        });
+
+                    }
+
+                } catch (InterruptedException | IOException e) {
+                    e.printStackTrace();
+                }
+
+            }
+
+        }).start();
     }
 
     /**
@@ -590,6 +662,14 @@ public class MlnDownloaderService {
 
     public static Path getDOWNLOAD_FOLDER() {
         return DOWNLOAD_FOLDER;
+    }
+
+    public MlnDownloaderDiscInfo getMlnDownloaderDiscInfo() {
+        return mlnDownloaderDiscInfo;
+    }
+
+    public void setMlnDownloaderDiscInfo(MlnDownloaderDiscInfo mlnDownloaderDiscInfo) {
+        this.mlnDownloaderDiscInfo = mlnDownloaderDiscInfo;
     }
 
 }
